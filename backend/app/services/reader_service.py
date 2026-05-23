@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -73,12 +74,23 @@ async def assemble_reader_payload(db: AsyncSession, article_id: int) -> Dict[str
         if book:
             # Get sibling chapters
             siblings_result = await db.execute(
-                select(Article.id, Article.title, Article.chapter_index)
+                select(Article.id, Article.title, Article.chapter_index, Article.chapter_path)
                 .where(Article.book_id == book.id)
                 .order_by(Article.chapter_index)
             )
-            chapters = [{"id": r[0], "title": r[1], "chapter_index": r[2]} for r in siblings_result.all()]
+            chapters = [
+                {"id": r[0], "title": r[1], "chapter_index": r[2], "chapter_path": r[3]}
+                for r in siblings_result.all()
+            ]
             current_idx = next((i for i, c in enumerate(chapters) if c["id"] == article.id), -1)
+
+            toc_tree = None
+            if book.toc_json:
+                try:
+                    toc_tree = json.loads(book.toc_json)
+                except (json.JSONDecodeError, TypeError):
+                    toc_tree = None
+
             book_context = {
                 "book_id": book.id,
                 "book_title": book.title,
@@ -87,6 +99,7 @@ async def assemble_reader_payload(db: AsyncSession, article_id: int) -> Dict[str
                 "prev_chapter": chapters[current_idx - 1] if current_idx > 0 else None,
                 "next_chapter": chapters[current_idx + 1] if current_idx + 1 < len(chapters) else None,
                 "all_chapters": chapters,
+                "toc_tree": toc_tree,
             }
 
     return {

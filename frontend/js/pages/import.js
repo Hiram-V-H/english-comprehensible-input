@@ -2,6 +2,7 @@ import { el, clearElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { showToast } from '../components/shared/toast.js';
 import { formatDate } from '../utils/formatters.js';
+import { renderImportTocTree } from '../components/toc-tree.js';
 
 export function importPage(main) {
     main.appendChild(el('div', { className: 'page-header' }, [
@@ -163,33 +164,61 @@ export function importPage(main) {
         const chapterList = el('div', { style: 'margin-bottom:12px' });
         const chapterCheckboxes = [];
 
-        // Select all / deselect all
-        const selectAllRow = el('div', { style: 'display:flex;gap:8px;margin-bottom:8px' });
-        selectAllRow.appendChild(el('button', {
+        // Toolbar: select/deselect all + expand/collapse
+        const toolbarRow = el('div', { style: 'display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap' });
+        toolbarRow.appendChild(el('button', {
             className: 'btn btn-sm',
             onClick: () => {
                 chapterCheckboxes.forEach(cb => { cb.checked = true; });
             },
         }, ['Select All']));
-        selectAllRow.appendChild(el('button', {
+        toolbarRow.appendChild(el('button', {
             className: 'btn btn-sm',
             onClick: () => {
                 chapterCheckboxes.forEach(cb => { cb.checked = false; });
             },
         }, ['Deselect All']));
-        chapterList.appendChild(selectAllRow);
+        toolbarRow.appendChild(el('span', { style: 'flex:1' }));
+        toolbarRow.appendChild(el('button', {
+            className: 'btn btn-sm',
+            onClick: () => {
+                chapterList.querySelectorAll('.toc-tree-children').forEach(el => el.classList.remove('collapsed'));
+                chapterList.querySelectorAll('.toc-tree-toggle').forEach(t => {
+                    if (!t.classList.contains('toc-tree-toggle-empty')) t.textContent = '▾';
+                });
+            },
+        }, ['Expand All']));
+        toolbarRow.appendChild(el('button', {
+            className: 'btn btn-sm',
+            onClick: () => {
+                chapterList.querySelectorAll('.toc-tree-children').forEach(el => el.classList.add('collapsed'));
+                chapterList.querySelectorAll('.toc-tree-toggle').forEach(t => {
+                    if (!t.classList.contains('toc-tree-toggle-empty')) t.textContent = '▸';
+                });
+            },
+        }, ['Collapse All']));
+        chapterList.appendChild(toolbarRow);
 
-        for (const ch of previewData.chapters) {
-            const row = el('label', { className: 'card', style: 'display:flex;align-items:center;gap:12px;margin-bottom:4px;cursor:pointer;padding:10px 16px' });
-            const cb = el('input', {
-                type: 'checkbox',
-                checked: ch.selected ? '' : undefined,
-                style: 'width:16px;height:16px',
-            });
-            chapterCheckboxes.push(cb);
-            row.appendChild(cb);
-            row.appendChild(el('span', { style: 'font-size:14px' }, [(ch.index + 1) + '. ' + ch.title]));
-            chapterList.appendChild(row);
+        // Use TOC tree if available, otherwise fall back to flat list
+        if (previewData.toc_tree && previewData.toc_tree.length > 0) {
+            chapterList.appendChild(renderImportTocTree(
+                previewData.toc_tree,
+                previewData.chapters,
+                chapterCheckboxes,
+            ));
+        } else {
+            for (const ch of previewData.chapters) {
+                const row = el('label', { className: 'card', style: 'display:flex;align-items:center;gap:12px;margin-bottom:4px;cursor:pointer;padding:10px 16px' });
+                const cb = el('input', {
+                    type: 'checkbox',
+                    checked: ch.selected ? 'checked' : undefined,
+                    style: 'width:16px;height:16px',
+                });
+                chapterCheckboxes.push(cb);
+                row.appendChild(cb);
+                row.appendChild(el('span', { style: 'font-size:14px' }, [(ch.index + 1) + '. ' + ch.title]));
+                chapterList.appendChild(row);
+            }
         }
         epubPreviewSection.appendChild(chapterList);
 

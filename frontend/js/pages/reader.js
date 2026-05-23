@@ -8,6 +8,7 @@ import { HighlightOverlay } from '../components/reader/highlight-overlay.js';
 import { AnnotationPanel } from '../components/reader/annotation-panel.js';
 import { ReaderToolbar } from '../components/reader/reader-toolbar.js';
 import { showToast } from '../components/shared/toast.js';
+import { renderTocTree, buildChapterMap } from '../components/toc-tree.js';
 
 export function readerPage(main, articleId) {
     main.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -186,17 +187,24 @@ function renderBookTOC(book, currentArticleId) {
     const toc = el('div', { className: 'book-toc' });
     toc.appendChild(el('h3', { style: 'font-size:14px;margin-bottom:8px;color:var(--color-text-secondary)' }, ['Contents']));
 
-    for (const ch of (book.all_chapters || [])) {
-        const isCurrent = ch.id === parseInt(currentArticleId);
-        const link = el('a', {
-            className: 'book-toc-item' + (isCurrent ? ' current' : ''),
-            href: '#/reader/' + ch.id,
-            onClick: (e) => { e.preventDefault(); router.navigate('#/reader/' + ch.id); },
-            style: `display:block;padding:4px 8px;border-radius:4px;font-size:13px;text-decoration:none;color:${isCurrent ? 'var(--color-primary)' : 'var(--color-text)'};background:${isCurrent ? 'var(--color-primary-light)' : 'transparent'}`,
-        }, [
-            (isCurrent ? '▶ ' : '') + ch.title,
-        ]);
-        toc.appendChild(link);
+    const chapterMap = buildChapterMap(book.all_chapters || []);
+
+    if (book.toc_tree && book.toc_tree.length > 0) {
+        toc.appendChild(renderTocTree(book.toc_tree, chapterMap, parseInt(currentArticleId)));
+    } else {
+        // Fallback: flat chapter list
+        for (const ch of (book.all_chapters || [])) {
+            const isCurrent = ch.id === parseInt(currentArticleId);
+            const link = el('a', {
+                className: 'book-toc-item' + (isCurrent ? ' current' : ''),
+                href: '#/reader/' + ch.id,
+                onClick: (e) => { e.preventDefault(); router.navigate('#/reader/' + ch.id); },
+                style: `display:block;padding:4px 8px;border-radius:4px;font-size:13px;text-decoration:none;color:${isCurrent ? 'var(--color-primary)' : 'var(--color-text)'};background:${isCurrent ? 'var(--color-primary-light)' : 'transparent'}`,
+            }, [
+                (isCurrent ? '▶ ' : '') + ch.title,
+            ]);
+            toc.appendChild(link);
+        }
     }
     return toc;
 }

@@ -39,6 +39,14 @@ class ImportedArticle:
 
 
 @dataclass
+class TocItem:
+    """Recursive table-of-contents node."""
+    title: str
+    href: str
+    children: List[TocItem] = field(default_factory=list)
+
+
+@dataclass
 class ChapterInfo:
     """Metadata for one chapter in a book during preview phase."""
     index: int                      # 0-based chapter index
@@ -60,6 +68,7 @@ class BookImportResult:
     sha256_hash: str = ""
     total_chapters: int = 0
     chapters: List[ChapterInfo] = field(default_factory=list)
+    toc_tree: List[TocItem] = field(default_factory=list)
     metadata: Dict = field(default_factory=dict)
 
 

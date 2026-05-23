@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -243,6 +244,7 @@ async def import_book_chapters(
         sha256_hash=result.sha256_hash,
         total_chapters=len([c for c in result.chapters if c.selected]),
         metadata_json=json.dumps(result.metadata) if result.metadata else None,
+        toc_json=json.dumps([asdict(item) for item in result.toc_tree]) if result.toc_tree else None,
     )
     db.add(book)
     await db.flush()

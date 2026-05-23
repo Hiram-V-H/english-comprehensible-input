@@ -354,3 +354,75 @@
 .import-history-table tr:nth-child(even) td {
     background: #fdfaf5;
 }
+
+/* ── TOC Tree ────────────────────────────────────────────── */
+
+.toc-tree {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.toc-tree-level {
+    /* wrapper for each nesting level */
+}
+
+.toc-tree-item {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 3px 0;
+}
+
+.toc-tree-item.current > .toc-tree-link {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.toc-tree-toggle {
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    user-select: none;
+    line-height: inherit;
+}
+
+.toc-tree-toggle:hover {
+    color: var(--color-text);
+}
+
+.toc-tree-toggle-empty {
+    visibility: hidden;
+    cursor: default;
+}
+
+.toc-tree-link {
+    color: var(--color-text);
+    text-decoration: none;
+    border-radius: 3px;
+    padding: 1px 4px;
+    transition: background 0.12s;
+    display: block;
+    flex: 1;
+}
+
+.toc-tree-link:hover {
+    background: var(--color-accent-light);
+    color: var(--color-primary);
+}
+
+.toc-tree-link.current {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.toc-tree-children {
+    margin-left: 16px;
+}
+
+.toc-tree-children.collapsed {
+    display: none;
+}

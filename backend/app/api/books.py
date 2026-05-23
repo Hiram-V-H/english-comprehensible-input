@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 from typing import Optional
 
@@ -45,6 +46,13 @@ async def list_books(
 @router.get("/{book_id}")
 async def get_book(book_id: int, db: AsyncSession = Depends(get_db)):
     book = await book_service.get_book(db, book_id)
+    toc_tree = None
+    if book.toc_json:
+        try:
+            toc_tree = json.loads(book.toc_json)
+        except (json.JSONDecodeError, TypeError):
+            toc_tree = None
+
     return {
         "status": "ok",
         "data": {
@@ -54,11 +62,13 @@ async def get_book(book_id: int, db: AsyncSession = Depends(get_db)):
             "source_type": book.source_type,
             "total_chapters": book.total_chapters,
             "created_at": book.created_at.isoformat() if book.created_at else None,
+            "toc_tree": toc_tree,
             "chapters": [
                 {
                     "id": a.id,
                     "title": a.title,
                     "chapter_index": a.chapter_index,
+                    "chapter_path": a.chapter_path,
                     "word_count": a.word_count,
                     "unknown_word_count": a.unknown_word_count,
                     "difficulty_score": a.difficulty_score,

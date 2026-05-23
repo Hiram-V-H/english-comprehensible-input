@@ -20,6 +20,7 @@ class Book(Base, TimestampMixin):
     language: Mapped[str] = mapped_column(String(10), nullable=False, default="en", server_default="en")
     sha256_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     metadata_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    toc_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     total_chapters: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     articles: Mapped[List["Article"]] = relationship(

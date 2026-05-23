@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import math
 import tempfile
+from dataclasses import asdict
 from pathlib import Path
 from typing import List, Optional
 
@@ -108,6 +109,7 @@ async def epub_preview(file: UploadFile = File(...)):
                     }
                     for ch in result.chapters
                 ],
+                "toc_tree": [asdict(item) for item in result.toc_tree],
             },
         }
     except Exception as e:
