@@ -10,7 +10,7 @@ export function vocabularyPage(main) {
     ]));
 
     // Stats bar
-    const statsEl = el('div', { className: 'stats-bar' });
+    const statsEl = el('div', { className: 'vocab-stats' });
     main.appendChild(statsEl);
 
     // Search + filter
@@ -59,8 +59,16 @@ export function vocabularyPage(main) {
         try {
             const stats = await api.getVocabularyStats();
             statsEl.innerHTML = '';
-            for (const [label, cls] of [['unknown', 'badge-unknown'], ['learning', 'badge-learning'], ['known', 'badge-known']]) {
-                statsEl.appendChild(el('span', { className: 'badge ' + cls }, [`${label}: ${stats[label] || 0}`]));
+            const items = [
+                { label: 'Unknown', type: 'unknown' },
+                { label: 'Learning', type: 'learning' },
+                { label: 'Known', type: 'known' },
+            ];
+            for (const item of items) {
+                statsEl.appendChild(el('div', { className: 'vocab-stat vocab-stat-' + item.type }, [
+                    el('div', { className: 'vocab-stat-value' }, [String(stats[item.type] || 0)]),
+                    el('div', { className: 'vocab-stat-label' }, [item.label]),
+                ]));
             }
         } catch (e) { /* ignore */ }
     }
@@ -96,10 +104,10 @@ export function vocabularyPage(main) {
         const tbody = el('tbody');
         for (const w of words) {
             tbody.appendChild(el('tr', {}, [
-                el('td', {}, [el('span', { className: 'word-text', onClick: () => { router.navigate('#/vocabulary/' + w.id); } }, [w.word])]),
+                el('td', {}, [el('span', { className: 'word-link', onClick: () => { router.navigate('#/vocabulary/' + w.id); } }, [w.word])]),
                 el('td', {}, [renderStatusBadge(w.status)]),
                 el('td', {}, [String(w.encounter_count)]),
-                el('td', { className: 'word-notes-preview' }, [w.notes || '']),
+                el('td', { className: 'word-notes' }, [w.notes || '']),
             ]));
         }
         table.appendChild(tbody);

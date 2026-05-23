@@ -1,23 +1,140 @@
-/* Vocabulary page */
-.word-table { width: 100%; border-collapse: collapse; }
+/* Vocab stats bar */
+.vocab-stats {
+    display: flex;
+    gap: 24px;
+    padding: 16px 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.vocab-stat {
+    text-align: center;
+}
+
+.vocab-stat-value {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.vocab-stat-label {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+
+.vocab-stat-unknown .vocab-stat-value { color: var(--color-unknown); }
+.vocab-stat-learning .vocab-stat-value { color: var(--color-learning); }
+.vocab-stat-known .vocab-stat-value { color: var(--color-known); }
+
+/* Vocab table */
+.word-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
 .word-table th {
-    text-align: left; padding: 10px 14px;
-    border-bottom: 2px solid var(--color-border);
-    font-size: 12px; font-weight: 600; color: var(--color-text-secondary);
-    text-transform: uppercase; letter-spacing: 0.5px;
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--color-accent-light);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 10px;
 }
+
 .word-table td {
-    padding: 8px 14px; border-bottom: 1px solid var(--color-border);
-    font-size: 14px;
+    padding: 8px 12px;
+    color: var(--color-text-secondary);
+    border-top: 1px solid var(--color-border-light);
 }
-.word-table tr:hover td { background: #fafafa; }
-.word-text { font-weight: 600; cursor: pointer; color: var(--color-primary); }
-.word-text:hover { text-decoration: underline; }
-.word-notes-preview { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-text-secondary); }
+
+.word-table tr:nth-child(even) td {
+    background: #fdfaf5;
+}
+
+.word-table .word-link {
+    font-weight: 700;
+    color: var(--color-primary);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.word-table .word-link:hover {
+    color: var(--color-accent);
+}
+
+.word-table .word-notes {
+    color: var(--color-text-subtle);
+    font-size: 10px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 /* Word detail */
-.word-detail-header { margin-bottom: 24px; }
-.word-detail-title { font-size: 28px; font-weight: 700; }
-.word-detail-meta { display: flex; gap: 16px; margin-top: 8px; align-items: center; }
-.note-card { margin-bottom: 12px; }
-.note-type-badge { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.word-detail-header {
+    margin-bottom: 20px;
+}
+
+.word-detail-word {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.word-detail-pronunciation {
+    font-size: 15px;
+    color: var(--color-text-subtle);
+    margin-left: 10px;
+}
+
+.word-detail-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 8px;
+}
+
+.note-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 8px;
+}
+
+.note-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.note-card-type {
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    font-size: 10px;
+    background: var(--color-accent-light);
+    color: var(--color-text-muted);
+}
+
+.note-card-date {
+    font-size: 10px;
+    color: var(--color-text-subtle);
+    margin-left: auto;
+}
+
+.note-card-content {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.7;
+}

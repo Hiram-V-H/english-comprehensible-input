@@ -12,10 +12,10 @@ export function wordDetailPage(main, wordId) {
             main.innerHTML = '';
 
             main.appendChild(el('div', { className: 'word-detail-header' }, [
-                el('h1', { className: 'word-detail-title' }, [word.word]),
+                el('h1', { className: 'word-detail-word' }, [word.word]),
                 el('div', { className: 'word-detail-meta' }, [
                     el('span', { className: 'badge badge-' + word.status }, [word.status]),
-                    word.pronunciation ? el('span', { style: 'color:var(--color-text-secondary)' }, ['/' + word.pronunciation + '/']) : null,
+                    word.pronunciation ? el('span', { className: 'word-detail-pronunciation' }, ['/' + word.pronunciation + '/']) : null,
                     el('span', {}, [`Encountered ${word.encounter_count} times`]),
                     el('span', {}, ['Since ' + formatDate(word.first_seen)]),
                 ]),
@@ -34,10 +34,12 @@ export function wordDetailPage(main, wordId) {
             const notesContainer = el('div');
             if (word.word_notes && word.word_notes.length > 0) {
                 for (const note of word.word_notes) {
-                    notesContainer.appendChild(el('div', { className: 'card note-card' }, [
-                        el('div', { className: 'note-type-badge', style: 'margin-bottom:4px;color:var(--color-text-secondary)' }, [note.note_type]),
-                        el('div', {}, [note.content]),
-                        el('div', { style: 'font-size:11px;color:var(--color-text-secondary);margin-top:4px' }, [formatDate(note.created_at)]),
+                    notesContainer.appendChild(el('div', { className: 'note-card' }, [
+                        el('div', { className: 'note-card-header' }, [
+                            el('span', { className: 'note-card-type' }, [note.note_type]),
+                            el('span', { className: 'note-card-date' }, [formatDate(note.created_at)]),
+                        ]),
+                        el('div', { className: 'note-card-content' }, [note.content]),
                     ]));
                 }
             } else {
