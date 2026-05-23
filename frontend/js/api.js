@@ -54,6 +54,8 @@ export const api = {
     deleteArticle: (id) => request('DELETE', '/articles/' + id),
 
     // Import
+    importText: (title, content) =>
+        request('POST', '/import/text', { title, content }),
     importFile: (file) => {
         const fd = new FormData();
         fd.append('file', file);

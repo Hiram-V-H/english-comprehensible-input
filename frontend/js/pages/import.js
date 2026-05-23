@@ -8,12 +8,58 @@ export function importPage(main) {
         el('h1', { className: 'page-title' }, ['Import']),
     ]));
 
-    // ── Drop zone ─────────────────────────────────────────
-    const dropSection = el('div', { className: 'import-section' }, [
-        el('div', { className: 'import-section-title' }, ['Upload File']),
-    ]);
+    // ── Two-column layout ────────────────────────────────
+    const columns = el('div', { style: 'display:flex;gap:24px;flex-wrap:wrap' });
+    main.appendChild(columns);
+
+    // ── LEFT COLUMN: Paste text (~60%) ───────────────────
+    const leftCol = el('div', { style: 'flex:1 1 55%;min-width:320px' });
+
+    leftCol.appendChild(el('label', { className: 'form-label' }, ['Paste article text']));
+
+    const textarea = el('textarea', {
+        className: 'form-textarea',
+        placeholder: 'Paste your article content here...\n\nYou can paste plain text or markdown. The first line will be used as the title.',
+        style: 'min-height:200px;resize:vertical',
+    });
+    leftCol.appendChild(textarea);
+
+    const footer = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-top:8px' });
+    footer.appendChild(el('span', { style: 'font-size:12px;color:var(--color-text-secondary)' }, ['First line becomes the title']));
+    const importTextBtn = el('button', { className: 'btn btn-primary' }, ['Import Text']);
+    importTextBtn.addEventListener('click', async () => {
+        const raw = textarea.value.trim();
+        if (!raw) {
+            showToast('Please paste some text first', 'error');
+            return;
+        }
+        const lines = raw.split('\n');
+        const title = lines[0].trim() || 'Untitled';
+        const content = raw;
+        try {
+            await api.importText(title, content);
+            showToast('Text imported successfully', 'success');
+            textarea.value = '';
+            loadHistory();
+        } catch (e) {
+            showToast(e.message, 'error');
+        }
+    });
+    footer.appendChild(importTextBtn);
+    leftCol.appendChild(footer);
+
+    columns.appendChild(leftCol);
+
+    // ── RIGHT COLUMN: File + Folder (~40%) ───────────────
+    const rightCol = el('div', { style: 'flex:1 1 35%;min-width:280px' });
+
+    // Drop zone
+    rightCol.appendChild(el('label', { className: 'form-label' }, ['Or drop files']));
+
     const dropZone = el('div', { className: 'drop-zone' }, [
-        el('p', {}, ['Drop a .txt, .md, or .epub file here, or click to browse']),
+        el('div', { className: 'drop-zone-icon', style: 'font-size:28px;margin-bottom:8px' }, ['\u{1F4C4}']),
+        el('p', {}, ['Drop files or click']),
+        el('p', { style: 'font-size:12px;color:var(--color-text-secondary);margin-top:4px' }, ['.txt, .md, .epub']),
         el('input', {
             type: 'file', accept: '.txt,.md,.markdown,.epub',
             style: 'display:none',
@@ -24,25 +70,19 @@ export function importPage(main) {
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
     dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
-    dropSection.appendChild(dropZone);
-    main.appendChild(dropSection);
+    rightCol.appendChild(dropZone);
 
-    // ── EPUB preview area (shown on EPUB upload) ──────────
-    const epubPreviewSection = el('div', { className: 'import-section', style: 'display:none' });
-    main.appendChild(epubPreviewSection);
+    // Folder import
+    rightCol.appendChild(el('label', { className: 'form-label', style: 'margin-top:16px' }, ['Folder import']));
 
-    // ── Folder import ─────────────────────────────────────
-    const folderSection = el('div', { className: 'import-section' }, [
-        el('div', { className: 'import-section-title' }, ['Import from Folder']),
-    ]);
     const folderRow = el('div', { style: 'display:flex;gap:8px;' });
     const folderInput = el('input', {
-        className: 'search-input',
+        className: 'form-input',
         placeholder: 'Folder path...',
         style: 'flex:1',
     });
     folderRow.appendChild(folderInput);
-    folderRow.appendChild(el('button', {
+    const scanBtn = el('button', {
         className: 'btn btn-primary',
         onClick: async () => {
             const path = folderInput.value.trim();
@@ -53,11 +93,17 @@ export function importPage(main) {
                 loadHistory();
             } catch (e) { showToast(e.message, 'error'); }
         },
-    }, ['Scan & Import']));
-    folderSection.appendChild(folderRow);
-    main.appendChild(folderSection);
+    }, ['Scan']);
+    folderRow.appendChild(scanBtn);
+    rightCol.appendChild(folderRow);
 
-    // ── History ───────────────────────────────────────────
+    columns.appendChild(rightCol);
+
+    // ── EPUB preview area (shown on EPUB upload) ──────────
+    const epubPreviewSection = el('div', { className: 'import-section', style: 'display:none' });
+    main.appendChild(epubPreviewSection);
+
+    // ── Import History ────────────────────────────────────
     const histSection = el('div', { className: 'import-section' }, [
         el('div', { className: 'import-section-title' }, ['Import History']),
     ]);
