@@ -344,3 +344,47 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .loading { text-align: center; padding: 40px; color: var(--color-text-muted); }
+
+@media (max-width: 768px) {
+    #sidebar {
+        width: var(--sidebar-collapsed);
+        min-width: var(--sidebar-collapsed);
+    }
+
+    #sidebar .nav-label,
+    #sidebar .brand-sub,
+    #sidebar .sidebar-footer span,
+    #sidebar .sidebar-toggle span {
+        display: none;
+    }
+
+    #sidebar .sidebar-brand {
+        padding: 14px 0;
+        text-align: center;
+    }
+
+    #sidebar .brand-name {
+        writing-mode: vertical-rl;
+        font-size: 14px;
+        letter-spacing: 2px;
+        margin: 0 auto;
+    }
+
+    #sidebar .sidebar-nav { padding: 6px 4px; }
+
+    #sidebar .sidebar-nav-item {
+        justify-content: center;
+        padding: 10px 0;
+    }
+
+    #sidebar .sidebar-footer { text-align: center; padding: 10px 4px; }
+
+    #app-main { padding: 16px; }
+
+    .article-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .reader-content { padding: 20px 16px; }
+    .reader-text { font-size: 16px; }
+}
