@@ -19,11 +19,8 @@ class Router {
         let hash = window.location.hash.slice(1) || 'library';
         // Strip leading slash from hash (nav links use #/library format)
         if (hash.startsWith('/')) hash = hash.slice(1);
-        // Update active nav link
-        document.querySelectorAll('.nav-link').forEach(link => {
-            const href = link.getAttribute('href');
-            link.classList.toggle('active', href === '#/' + hash || href === '#' + hash);
-        });
+        // Update active sidebar nav
+        import('./components/sidebar.js').then(m => m.updateActive());
 
         // Call cleanup
         if (this._currentCleanup) {

@@ -4,22 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comprehensible Input</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/vocabulary.css">
     <link rel="stylesheet" href="css/reader.css">
 </head>
 <body>
-    <nav id="navbar">
-        <div class="nav-brand">CI Reader</div>
-        <div class="nav-links">
-            <a href="#/library" class="nav-link">Library</a>
-            <a href="#/books" class="nav-link">Books</a>
-            <a href="#/vocabulary" class="nav-link">Vocabulary</a>
-            <a href="#/import" class="nav-link">Import</a>
-        </div>
-    </nav>
-    <main id="app-main"></main>
+    <div id="app-shell">
+        <aside id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-name">CI Reader</div>
+                <div class="brand-sub">Comprehensible Input</div>
+            </div>
+            <nav class="sidebar-nav"></nav>
+            <div class="sidebar-footer">
+                <span id="sidebar-coverage">Loading...</span>
+            </div>
+            <div class="sidebar-toggle">
+                <span>&#x276E;</span>
+            </div>
+        </aside>
+        <main id="app-main"></main>
+    </div>
     <div id="toast-container"></div>
 
     <script type="module" src="js/app.js"></script>

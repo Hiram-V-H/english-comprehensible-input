@@ -1,4 +1,5 @@
 import { router } from './router.js';
+import { initSidebar } from './components/sidebar.js';
 import { libraryPage } from './pages/library.js';
 import { booksPage } from './pages/books.js';
 import { vocabularyPage } from './pages/vocabulary.js';
@@ -20,4 +21,5 @@ router.register('books/:id', (main, params) => {
 });
 
 // Initial route
+initSidebar();
 router._handle();
