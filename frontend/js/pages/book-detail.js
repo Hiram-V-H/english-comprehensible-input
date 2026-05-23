@@ -24,7 +24,7 @@ export function bookDetailPage(main, bookId) {
             ]));
 
             // Chapters list
-            const chapterList = el('div');
+            const chapterList = el('div', { style: 'max-width:640px' });
             chapterList.appendChild(el('h3', { style: 'margin-bottom:12px' }, [
                 `Chapters (${(book.chapters || []).length})`,
             ]));
