@@ -23,9 +23,9 @@ export function bookDetailPage(main, bookId) {
                 ]),
             ]));
 
-            // Chapters list
-            const chapterList = el('div', { style: 'max-width:640px' });
-            chapterList.appendChild(el('h3', { style: 'margin-bottom:12px' }, [
+            // Chapters list — centered with constrained width
+            const chapterWrapper = el('div', { style: 'max-width:640px;margin:0 auto' });
+            chapterWrapper.appendChild(el('h3', { style: 'margin-bottom:12px;font-family:var(--font-display);font-size:16px;color:var(--color-text-secondary)' }, [
                 `Chapters (${(book.chapters || []).length})`,
             ]));
 
@@ -63,13 +63,13 @@ export function bookDetailPage(main, bookId) {
                             el('span', {}, [formatPercent(1 - unknownDensity) + ' known']),
                         ]) : null,
                     ]);
-                    chapterList.appendChild(card);
+                    chapterWrapper.appendChild(card);
                 }
             } else {
-                chapterList.appendChild(el('p', { style: 'color:var(--color-text-secondary)' }, ['No chapters imported.']));
+                chapterWrapper.appendChild(el('p', { style: 'color:var(--color-text-secondary)' }, ['No chapters imported.']));
             }
 
-            main.appendChild(chapterList);
+            main.appendChild(chapterWrapper);
 
         } catch (e) {
             main.innerHTML = `<div class="empty-state"><h3>Error</h3><p>${e.message}</p></div>`;
