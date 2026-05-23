@@ -47,6 +47,7 @@ async def import_content(
     raw_bytes: bytes,
     filename: str,
     registry: ImporterRegistry,
+    title: str | None = None,
 ) -> Tuple[int, bool]:
     """Import from uploaded content. Returns (article_id, is_new)."""
     extension = Path(filename).suffix.lower()
@@ -56,6 +57,9 @@ async def import_content(
 
     importer = importer_cls()
     article_data = await importer.import_content(raw_bytes, filename)
+
+    if title is not None:
+        article_data.title = title
 
     return await _save_article(db, article_data)
 

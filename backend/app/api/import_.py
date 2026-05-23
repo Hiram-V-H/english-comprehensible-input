@@ -30,6 +30,11 @@ class EpubConfirmBody(BaseModel):
     selected_chapter_indices: List[int]
 
 
+class TextImportBody(BaseModel):
+    title: str
+    content: str
+
+
 @router.post("/file")
 async def upload_file(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
     registry = ImporterRegistry()
@@ -132,6 +137,30 @@ async def scan_and_import(data: FolderImportRequest, db: AsyncSession = Depends(
     registry = ImporterRegistry()
     result = await import_folder(db, data.folder_path, data.recursive, registry)
     return {"status": "ok", "data": result}
+
+
+@router.post("/text")
+async def import_text(data: TextImportBody, db: AsyncSession = Depends(get_db)):
+    """Import article from pasted text."""
+    registry = ImporterRegistry()
+    raw_bytes = data.content.encode("utf-8")
+    filename = data.title + ".txt"
+    article_id, is_new = await import_content(db, raw_bytes, filename, registry, title=data.title)
+
+    from ..models.article import Article
+    from sqlalchemy import select
+    result = await db.execute(select(Article).where(Article.id == article_id))
+    article = result.scalar_one()
+
+    return {
+        "status": "ok",
+        "data": ImportResult(
+            article_id=article.id,
+            title=article.title,
+            status="imported" if is_new else "duplicate",
+            word_count=article.word_count or 0,
+        ),
+    }
 
 
 @router.get("/history")
