@@ -1,4 +1,5 @@
 import { clearElement } from './utils/dom.js';
+import { updateActive } from './components/sidebar.js';
 
 class Router {
     constructor() {
@@ -20,7 +21,7 @@ class Router {
         // Strip leading slash from hash (nav links use #/library format)
         if (hash.startsWith('/')) hash = hash.slice(1);
         // Update active sidebar nav
-        import('./components/sidebar.js').then(m => m.updateActive());
+        updateActive();
 
         // Call cleanup
         if (this._currentCleanup) {

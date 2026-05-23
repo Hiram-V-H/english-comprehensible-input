@@ -53,7 +53,7 @@ export function updateActive() {
 
     document.querySelectorAll('.sidebar-nav-item').forEach(item => {
         const pattern = item.getAttribute('data-pattern');
-        const isActive = hash.startsWith(pattern) || (pattern === 'library' && !hash);
+        const isActive = hash.startsWith(pattern);
         item.classList.toggle('active', isActive);
     });
 }
