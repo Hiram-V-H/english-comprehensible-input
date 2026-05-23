@@ -217,6 +217,8 @@ body {
     padding: 24px 32px;
     min-height: 100vh;
     overflow-x: hidden;
+    opacity: 1;
+    transition: opacity 0.12s ease-out;
 }
 
 .page-header {

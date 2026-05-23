@@ -16,7 +16,7 @@ class Router {
         window.location.hash = hash;
     }
 
-    _handle() {
+    async _handle() {
         let hash = window.location.hash.slice(1) || 'library';
         // Strip leading slash from hash (nav links use #/library format)
         if (hash.startsWith('/')) hash = hash.slice(1);
@@ -30,6 +30,12 @@ class Router {
         }
 
         const main = document.getElementById('app-main');
+
+        // Fade out
+        main.style.opacity = '0';
+        main.style.transition = 'opacity 0.12s ease-out';
+        await new Promise(resolve => setTimeout(resolve, 120));
+
         clearElement(main);
 
         // Match route
@@ -37,12 +43,21 @@ class Router {
             const params = this._match(pattern, hash);
             if (params !== null) {
                 this._currentCleanup = handler(main, params) || null;
+                // Fade in
+                requestAnimationFrame(() => {
+                    main.style.opacity = '1';
+                });
                 return;
             }
         }
 
         // 404
         main.innerHTML = '<div class="empty-state"><h3>Page not found</h3></div>';
+
+        // Fade in
+        requestAnimationFrame(() => {
+            main.style.opacity = '1';
+        });
     }
 
     _match(pattern, hash) {
