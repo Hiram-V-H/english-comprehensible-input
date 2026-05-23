@@ -6,7 +6,7 @@ export function renderPagination(page, totalPages, onPageChange) {
     const items = [];
     for (let i = 1; i <= totalPages; i++) {
         items.push(el('button', {
-            className: 'btn btn-sm' + (i === page ? ' btn-primary' : ''),
+            className: (i === page ? 'active' : ''),
             onClick: () => onPageChange(i),
         }, [String(i)]));
     }

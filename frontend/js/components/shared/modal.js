@@ -9,8 +9,8 @@ export function showModal(title, bodyEl, actions = []) {
                 onClick: () => close(a.value),
             }, [a.label])
         );
-        const modal = el('div', { className: 'modal' }, [
-            el('div', { className: 'modal-title' }, [title]),
+        const modal = el('div', { className: 'modal-box' }, [
+            el('h2', {}, [title]),
             bodyEl,
             actionBtns.length ? el('div', { className: 'modal-actions' }, actionBtns) : null,
         ]);
