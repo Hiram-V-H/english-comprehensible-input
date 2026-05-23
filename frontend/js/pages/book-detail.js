@@ -1,7 +1,15 @@
 import { el, clearElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { router } from '../router.js';
-import { formatDate } from '../utils/formatters.js';
+import { formatDate, formatPercent } from '../utils/formatters.js';
+
+const STRIPE_GRADIENTS = [
+    'linear-gradient(90deg, #8b6a4a, #c4a040, #6b4a2a)',
+    'linear-gradient(90deg, #6b4a2a, #8b6a4a, #6b4a2a)',
+    'linear-gradient(90deg, #5a8a4a, #7ab06a, #5a8a4a)',
+    'linear-gradient(90deg, #8b6a9a, #a090b0, #8b6a9a)',
+    'linear-gradient(90deg, #b8705a, #c4907a, #b8705a)',
+];
 
 export function bookDetailPage(main, bookId) {
     main.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -29,21 +37,49 @@ export function bookDetailPage(main, bookId) {
             ]));
 
             if (book.chapters && book.chapters.length > 0) {
-                for (const ch of book.chapters) {
+                for (let i = 0; i < book.chapters.length; i++) {
+                    const ch = book.chapters[i];
+                    const stripeColor = STRIPE_GRADIENTS[i % STRIPE_GRADIENTS.length];
+
+                    const unknownDensity = ch.unknown_word_count != null && ch.word_count
+                        ? ch.unknown_word_count / ch.word_count
+                        : null;
+
+                    let barColor, barBg;
+                    if (unknownDensity == null) {
+                        barColor = '#a08060';
+                        barBg = '#a08060';
+                    } else if (unknownDensity < 0.05) {
+                        barColor = '#5a8a4a';
+                        barBg = 'linear-gradient(90deg, #5a8a4a, #7ab06a)';
+                    } else if (unknownDensity < 0.15) {
+                        barColor = '#c4a040';
+                        barBg = 'linear-gradient(90deg, #c4a040, #d4b860)';
+                    } else {
+                        barColor = '#b8543a';
+                        barBg = 'linear-gradient(90deg, #b8543a, #c8705a)';
+                    }
+
                     const card = el('div', {
                         className: 'card',
-                        style: 'cursor:pointer;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center',
                         onClick: () => router.navigate('#/reader/' + ch.id),
+                        style: { cursor: 'pointer' },
                     }, [
-                        el('div', {}, [
-                            el('div', { style: 'font-weight:600;font-size:14px' }, [ch.title]),
-                            el('div', { style: 'color:var(--color-text-secondary);font-size:12px;margin-top:4px' }, [
-                                (ch.word_count || 0) + ' words' +
-                                (ch.unknown_word_count != null ? ' · ' + ch.unknown_word_count + ' new' : '') +
-                                (ch.difficulty_score != null ? ' · difficulty: ' + (ch.difficulty_score * 100).toFixed(0) + '%' : ''),
-                            ]),
+                        el('div', { className: 'article-card-top-stripe', style: { background: stripeColor } }),
+                        el('div', { className: 'article-card-title' }, ['Ch. ' + (ch.chapter_index ?? i + 1) + ': ' + ch.title]),
+                        el('div', { className: 'article-card-meta' }, [
+                            ch.unknown_word_count != null ? el('span', {}, [
+                                el('span', { className: 'meta-dot', style: { background: barColor } }),
+                                ch.unknown_word_count + ' new',
+                            ]) : null,
+                            el('span', {}, [(ch.word_count || 0) + ' words']),
                         ]),
-                        el('span', { style: 'color:var(--color-text-secondary);font-size:18px' }, ['→']),
+                        unknownDensity != null ? el('div', { className: 'difficulty-bar' }, [
+                            el('div', { className: 'difficulty-bar-inner', style: { width: (100 - unknownDensity * 100) + '%', background: barBg } }),
+                        ]) : null,
+                        unknownDensity != null ? el('div', { className: 'difficulty-label' }, [
+                            el('span', {}, [formatPercent(1 - unknownDensity) + ' known']),
+                        ]) : null,
                     ]);
                     chapterList.appendChild(card);
                 }

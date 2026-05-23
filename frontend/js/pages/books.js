@@ -1,5 +1,14 @@
 import { el } from '../utils/dom.js';
 import { router } from '../router.js';
+import { formatDate } from '../utils/formatters.js';
+
+const STRIPE_GRADIENTS = [
+    'linear-gradient(90deg, #8b6a4a, #c4a040, #6b4a2a)',
+    'linear-gradient(90deg, #6b4a2a, #8b6a4a, #6b4a2a)',
+    'linear-gradient(90deg, #5a8a4a, #7ab06a, #5a8a4a)',
+    'linear-gradient(90deg, #8b6a9a, #a090b0, #8b6a9a)',
+    'linear-gradient(90deg, #b8705a, #c4907a, #b8705a)',
+];
 
 export function booksPage(main) {
     main.appendChild(el('div', { className: 'page-header' }, [
@@ -23,15 +32,18 @@ export function booksPage(main) {
 
             content.innerHTML = '';
             const grid = el('div', { className: 'article-grid' });
-            for (const book of items) {
+            for (let i = 0; i < items.length; i++) {
+                const book = items[i];
+                const stripeColor = STRIPE_GRADIENTS[i % STRIPE_GRADIENTS.length];
                 grid.appendChild(el('div', {
                     className: 'card',
                     onClick: () => router.navigate('#/books/' + book.id),
-                    style: 'cursor:pointer',
+                    style: { cursor: 'pointer' },
                 }, [
+                    el('div', { className: 'article-card-top-stripe', style: { background: stripeColor } }),
                     el('div', { className: 'article-card-title' }, [book.title]),
+                    book.author ? el('div', { className: 'article-card-author' }, [book.author]) : null,
                     el('div', { className: 'article-card-meta' }, [
-                        book.author ? el('span', {}, ['by ' + book.author]) : null,
                         el('span', {}, [(book.total_chapters || 0) + ' chapters']),
                     ]),
                 ]));
