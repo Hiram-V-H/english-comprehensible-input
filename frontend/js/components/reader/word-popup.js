@@ -100,7 +100,7 @@ export class WordPopup {
 
         // Status selector buttons
         const statusSelector = el('div', { className: 'popup-status-selector' });
-        for (const s of ['unknown', 'learning', 'familiar', 'known', 'mastered']) {
+        for (const s of ['unknown', 'learning', 'familiar', 'known']) {
             statusSelector.appendChild(el('button', {
                 className: 'status-btn' + (s === word.status ? ' active' : ''),
                 onClick: async (ev) => {

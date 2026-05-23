@@ -2,14 +2,7 @@ import { el } from '../utils/dom.js';
 import { api } from '../api.js';
 import { formatDate, formatPercent } from '../utils/formatters.js';
 import { router } from '../router.js';
-
-const STRIPE_GRADIENTS = [
-    'linear-gradient(90deg, #8b6a4a, #c4a040, #6b4a2a)',
-    'linear-gradient(90deg, #6b4a2a, #8b6a4a, #6b4a2a)',
-    'linear-gradient(90deg, #5a8a4a, #7ab06a, #5a8a4a)',
-    'linear-gradient(90deg, #8b6a9a, #a090b0, #8b6a9a)',
-    'linear-gradient(90deg, #b8705a, #c4907a, #b8705a)',
-];
+import { STRIPE_GRADIENTS, getDifficultyColors, getI1ScoreLabel } from '../utils/card-utils.js';
 
 export function libraryPage(main) {
     main.appendChild(el('div', { className: 'page-header' }, [
@@ -48,24 +41,11 @@ function renderArticleCard(article, index) {
         ? article.unknown_word_count / article.word_count
         : null;
 
-    let barColor, barBg;
-    if (unknownDensity == null) {
-        barColor = '#a08060';
-        barBg = '#a08060';
-    } else if (unknownDensity < 0.05) {
-        barColor = '#5a8a4a';
-        barBg = 'linear-gradient(90deg, #5a8a4a, #7ab06a)';
-    } else if (unknownDensity < 0.15) {
-        barColor = '#c4a040';
-        barBg = 'linear-gradient(90deg, #c4a040, #d4b860)';
-    } else {
-        barColor = '#b8543a';
-        barBg = 'linear-gradient(90deg, #b8543a, #c8705a)';
-    }
+    const diffColors = getDifficultyColors(unknownDensity);
+    const barColor = diffColors.barColor;
+    const barBg = diffColors.barBg;
 
-    const i1score = article.i_plus_one_score != null
-        ? (article.i_plus_one_score >= 0.8 ? 'Ideal' : article.i_plus_one_score >= 0.5 ? 'Challenging' : 'Difficult')
-        : null;
+    const i1score = getI1ScoreLabel(article.i_plus_one_score);
 
     return el('div', {
         className: 'card',

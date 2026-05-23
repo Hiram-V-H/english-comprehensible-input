@@ -124,13 +124,15 @@ export function readerPage(main, articleId) {
             panel.render(articleId, readerData.highlights, readerData.annotations);
 
             // Global click to dismiss popup
-            document.addEventListener('click', (e) => {
+            const dismissHandler = (e) => {
                 if (popup.visible && !e.target.closest('.word') && !e.target.closest('.word-popup')) {
                     popup.hide();
                 }
-            });
+            };
+            document.addEventListener('click', dismissHandler);
 
             return () => {
+                document.removeEventListener('click', dismissHandler);
                 popup.hide();
                 selectionHandler.hideMenu();
                 if (sessionId) {

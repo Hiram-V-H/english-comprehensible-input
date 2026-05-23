@@ -1,13 +1,6 @@
 import { el } from '../utils/dom.js';
 import { router } from '../router.js';
-
-const STRIPE_GRADIENTS = [
-    'linear-gradient(90deg, #8b6a4a, #c4a040, #6b4a2a)',
-    'linear-gradient(90deg, #6b4a2a, #8b6a4a, #6b4a2a)',
-    'linear-gradient(90deg, #5a8a4a, #7ab06a, #5a8a4a)',
-    'linear-gradient(90deg, #8b6a9a, #a090b0, #8b6a9a)',
-    'linear-gradient(90deg, #b8705a, #c4907a, #b8705a)',
-];
+import { STRIPE_GRADIENTS } from '../utils/card-utils.js';
 
 export function booksPage(main) {
     main.appendChild(el('div', { className: 'page-header' }, [
