@@ -115,12 +115,17 @@
 .pagination {
     display: flex;
     justify-content: center;
-    gap: 6px;
-    margin-top: 16px;
+    align-items: center;
+    gap: 4px;
+    margin-top: 20px;
+    padding-bottom: 8px;
+    flex-wrap: wrap;
 }
 
 .pagination button {
-    padding: 4px 10px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     background: var(--color-surface);
@@ -129,14 +134,22 @@
     font-size: 12px;
     cursor: pointer;
     transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.pagination button:hover { background: var(--color-accent-light); }
+.pagination button:hover:not(:disabled) { background: var(--color-accent-light); }
 
 .pagination button.active {
     background: var(--color-primary);
     color: var(--color-accent);
     border-color: var(--color-primary);
+}
+
+.pagination button:disabled {
+    opacity: 0.35;
+    cursor: default;
 }
 
 /* Cards */
