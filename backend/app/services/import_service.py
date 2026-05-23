@@ -21,6 +21,11 @@ from .tokenizer import tokenize
 from .vocabulary import get_or_create_word
 
 
+def _has_letter(text: str) -> bool:
+    """Return True if text contains at least one ASCII letter (a-z, A-Z)."""
+    return any(c.isalpha() for c in text)
+
+
 async def import_file(
     db: AsyncSession,
     file_path: str,
@@ -114,8 +119,8 @@ async def _save_article(db: AsyncSession, data: ImportedArticle) -> Tuple[int, b
     # Tokenize
     tokens = tokenize(data.content_text)
 
-    # Count only real words (exclude punctuation)
-    real_word_count = sum(1 for t in tokens if not t.is_punctuation)
+    # Count only real words (exclude punctuation and non-letter tokens)
+    real_word_count = sum(1 for t in tokens if not t.is_punctuation and _has_letter(t.text))
 
     # Create article
     article = Article(
@@ -134,7 +139,7 @@ async def _save_article(db: AsyncSession, data: ImportedArticle) -> Tuple[int, b
 
     # Create article_word entries
     for token in tokens:
-        if token.is_punctuation:
+        if token.is_punctuation or not _has_letter(token.text):
             aw = ArticleWord(
                 article_id=article.id,
                 word_id=None,
@@ -280,7 +285,7 @@ async def _save_book_chapter(
         return existing.scalar_one_or_none().id, False
 
     tokens = tokenize(data.content_text)
-    real_word_count = sum(1 for t in tokens if not t.is_punctuation)
+    real_word_count = sum(1 for t in tokens if not t.is_punctuation and _has_letter(t.text))
 
     article = Article(
         title=data.title,
@@ -299,7 +304,7 @@ async def _save_book_chapter(
     await db.flush()
 
     for token in tokens:
-        if token.is_punctuation:
+        if token.is_punctuation or not _has_letter(token.text):
             aw = ArticleWord(
                 article_id=article.id, word_id=None,
                 word_text=token.text, word_lower=token.text.lower(),
