@@ -43,6 +43,12 @@
     --radius-pill: 14px;
     --shadow-card: 0 1px 3px rgba(61,32,16,0.06);
     --shadow-popup: 0 8px 30px rgba(61,32,16,0.15);
+
+    /* Backward-compatible aliases (used by files not yet updated) */
+    --color-primary-light: var(--color-accent-light);
+    --shadow: var(--shadow-card);
+    --font-serif: var(--font-body);
+
     --sidebar-width: 200px;
     --sidebar-collapsed: 48px;
 }
