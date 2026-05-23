@@ -54,10 +54,8 @@ export class WordPopup {
 
             if (!word) {
                 popup.innerHTML = '';
-                popup.appendChild(el('div', { className: 'word-popup-word' }, [wd.wordText]));
-                popup.appendChild(el('div', { className: 'word-popup-status' }, [
-                    el('span', { className: 'badge badge-unknown' }, ['new word']),
-                ]));
+                popup.appendChild(el('div', { className: 'popup-word' }, [wd.wordText]));
+                popup.appendChild(el('div', { className: 'popup-status status-unknown' }, ['new word']));
                 return;
             }
 
@@ -72,58 +70,72 @@ export class WordPopup {
     _renderPopup(popup, word, wd) {
         clearElement(popup);
 
-        // Word text
-        popup.appendChild(el('div', { className: 'word-popup-word' }, [
+        // Header area: word text + phonetic + status badge
+        popup.appendChild(el('div', { className: 'popup-word' }, [
             word.word,
-            word.pronunciation ? el('span', { style: 'font-size:14px;color:var(--color-text-secondary);font-weight:400;margin-left:8px' }, ['/' + word.pronunciation + '/']) : null,
+            word.pronunciation ? el('span', { className: 'popup-phonetic' }, ['/' + word.pronunciation + '/']) : null,
         ]));
 
-        // Status toggle
-        const statusSelect = el('select', {
-            className: 'status-select',
-            style: 'margin-bottom:8px',
-        });
-        for (const s of ['unknown', 'learning', 'familiar', 'known', 'mastered']) {
-            statusSelect.appendChild(el('option', { value: s, selected: s === word.status ? '' : undefined }, [s]));
-        }
-        statusSelect.addEventListener('change', async () => {
-            try {
-                await api.updateWord(word.id, { status: statusSelect.value });
-                word.status = statusSelect.value;
-                showToast('Status updated', 'success');
-                if (this._onStatusChange) this._onStatusChange(wd.position, statusSelect.value);
-            } catch (e) { showToast(e.message, 'error'); }
-        });
-        popup.appendChild(el('div', { className: 'word-popup-status' }, [statusSelect]));
-
-        // Encounter counter
-        popup.appendChild(el('div', { style: 'font-size:12px;color:var(--color-text-secondary);margin-bottom:8px' }, [
-            `Encountered: ${word.encounter_count} times`,
+        // Status badge
+        popup.appendChild(el('div', { className: 'popup-status status-' + (word.status || 'unknown') }, [
+            word.status || 'unknown',
         ]));
 
-        // Personal notes
-        const notesDiv = el('div', { className: 'word-popup-notes' });
+        // Definition (notes content as closest equivalent)
         const notes = word.word_notes || [];
-        if (notes.length > 0) {
+        const hasNotes = word.notes || notes.length > 0;
+        if (hasNotes) {
+            const defDiv = el('div', { className: 'popup-definition' });
+            if (word.notes) {
+                defDiv.appendChild(el('div', {}, [word.notes]));
+            }
             for (const note of notes) {
-                notesDiv.appendChild(el('div', { className: 'word-popup-note' }, [
+                defDiv.appendChild(el('div', {}, [
                     el('div', { style: 'font-size:11px;color:var(--color-text-secondary);margin-bottom:2px' }, [note.note_type]),
                     el('div', {}, [note.content]),
                 ]));
             }
+            popup.appendChild(defDiv);
         }
-        if (word.notes) {
-            notesDiv.appendChild(el('div', { className: 'word-popup-note' }, [word.notes]));
-        }
-        popup.appendChild(notesDiv);
 
-        // Add note form
+        // Status selector buttons
+        const statusSelector = el('div', { className: 'popup-status-selector' });
+        for (const s of ['unknown', 'learning', 'familiar', 'known', 'mastered']) {
+            statusSelector.appendChild(el('button', {
+                className: 'status-btn' + (s === word.status ? ' active' : ''),
+                onClick: async (ev) => {
+                    try {
+                        await api.updateWord(word.id, { status: s });
+                        word.status = s;
+                        // Update status badge
+                        const badge = popup.querySelector('.popup-status');
+                        if (badge) {
+                            badge.className = 'popup-status status-' + s;
+                            badge.textContent = s;
+                        }
+                        // Update active button
+                        popup.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+                        ev.target.classList.add('active');
+                        showToast('Status updated', 'success');
+                        if (this._onStatusChange) this._onStatusChange(wd.position, s);
+                    } catch (err) { showToast(err.message, 'error'); }
+                },
+            }, [s]));
+        }
+        popup.appendChild(statusSelector);
+
+        // Meta info
+        popup.appendChild(el('div', { className: 'popup-meta' }, [
+            `Encountered: ${word.encounter_count} times`,
+        ]));
+
+        // Note form
         const addNoteBtn = el('button', {
             className: 'btn btn-sm',
             onClick: async () => {
                 const textarea = el('textarea', { className: 'form-textarea', placeholder: 'Add a note...', style: 'min-height:50px;font-size:13px' });
                 const submitBtn = el('button', { className: 'btn btn-sm btn-primary', style: 'margin-top:4px' }, ['Save']);
-                const formDiv = el('div', { style: 'margin-top:8px' }, [textarea, submitBtn]);
+                const formDiv = el('div', { className: 'popup-note-form' }, [textarea, submitBtn]);
 
                 submitBtn.addEventListener('click', async () => {
                     const content = textarea.value.trim();
@@ -133,7 +145,7 @@ export class WordPopup {
                         showToast('Note added', 'success');
                         // Refresh popup
                         this.show(wd);
-                    } catch (e) { showToast(e.message, 'error'); }
+                    } catch (err) { showToast(err.message, 'error'); }
                 });
 
                 // Replace add button with form

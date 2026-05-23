@@ -2,6 +2,14 @@ import { el } from '../../utils/dom.js';
 import { api } from '../../api.js';
 import { showToast } from '../shared/toast.js';
 
+const HIGHLIGHT_COLORS = [
+    { name: 'gold', css: 'hl-dot-gold' },
+    { name: 'sage', css: 'hl-dot-sage' },
+    { name: 'lavender', css: 'hl-dot-lavender' },
+    { name: 'terracotta', css: 'hl-dot-terracotta' },
+    { name: 'slate', css: 'hl-dot-slate' },
+];
+
 /**
  * Handles text selection → highlight creation via context menu.
  */
@@ -23,12 +31,11 @@ export class SelectionHandler {
         const range = sel.getRangeAt(0);
         const rect = range.getBoundingClientRect();
 
-        const colors = ['#FFEB3B', '#A5D6A7', '#90CAF9', '#F48FB1', '#FFCC80'];
-        const menu = el('div', { className: 'highlight-context-menu' });
+        const menu = el('div', { className: 'highlight-menu' });
 
-        for (const color of colors) {
+        for (const color of HIGHLIGHT_COLORS) {
             menu.appendChild(el('div', {
-                style: `width:20px;height:20px;border-radius:50%;background:${color};cursor:pointer;border:1px solid #ccc`,
+                className: 'hl-dot ' + color.css,
                 onClick: async () => {
                     try {
                         await api.createHighlight(this.articleId, {
@@ -39,7 +46,7 @@ export class SelectionHandler {
                             end_word_position: selectionData.end_word_position,
                             highlight_type: 'custom',
                             anchor_type: 'text_offset',
-                            color: color,
+                            color: color.name,
                         });
                         showToast('Highlight created', 'success');
                         this.hideMenu();

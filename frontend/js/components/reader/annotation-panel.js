@@ -2,6 +2,23 @@ import { el, clearElement } from '../../utils/dom.js';
 import { api } from '../../api.js';
 import { showToast } from '../shared/toast.js';
 
+const HIGHLIGHT_COLOR_MAP = {
+    'gold': 'var(--hl-gold, #e6b422)',
+    'sage': 'var(--hl-sage, #7d9b76)',
+    'lavender': 'var(--hl-lavender, #9b8ec4)',
+    'terracotta': 'var(--hl-terracotta, #c97d60)',
+    'slate': 'var(--hl-slate, #7c8b9c)',
+    'yellow': 'var(--hl-gold, #e6b422)',
+    'green': 'var(--hl-sage, #7d9b76)',
+    'blue': 'var(--hl-lavender, #9b8ec4)',
+    'pink': 'var(--hl-terracotta, #c97d60)',
+    'orange': 'var(--hl-slate, #7c8b9c)',
+};
+
+function getHighlightColor(colorValue) {
+    return HIGHLIGHT_COLOR_MAP[colorValue] || 'var(--hl-gold, #e6b422)';
+}
+
 /**
  * Sidebar panel displaying annotations for highlights.
  */
@@ -22,7 +39,7 @@ export class AnnotationPanel {
         this.annotations = annotations;
         clearElement(this.container);
 
-        this.container.appendChild(el('h3', { style: 'font-size:16px;margin-bottom:12px' }, ['Annotations']));
+        this.container.appendChild(el('div', { className: 'sidebar-title' }, ['Annotations']));
 
         if (highlights.length === 0 && annotations.length === 0) {
             this.container.appendChild(el('p', { style: 'color:var(--color-text-secondary);font-size:13px' }, [
@@ -33,13 +50,15 @@ export class AnnotationPanel {
 
         for (const hl of highlights) {
             const hlAnns = annotations.filter(a => a.highlight_id === hl.id);
-            const item = el('div', { className: 'annotation-item' });
+            const highlightColor = getHighlightColor(hl.color);
+            const item = el('div', {
+                className: 'annotation-item',
+                style: { borderLeft: '3px solid ' + highlightColor },
+            });
             item.appendChild(el('div', { style: 'display:flex;align-items:center;gap:8px;margin-bottom:4px' }, [
-                el('span', { style: `display:inline-block;width:12px;height:12px;border-radius:2px;background:${hl.color};flex-shrink:0` }),
-                el('span', { style: 'font-size:13px;font-style:italic;color:var(--color-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap' }, ['"' + hl.selected_text.substring(0, 50) + '"']),
+                el('span', { className: 'ann-word' }, ['"' + hl.selected_text.substring(0, 50) + '"']),
                 el('button', {
-                    className: 'btn btn-sm btn-danger',
-                    style: 'margin-left:auto;flex-shrink:0',
+                    className: 'ann-delete',
                     onClick: async () => {
                         try {
                             await api.deleteHighlight(this.articleId, hl.id);
@@ -47,26 +66,25 @@ export class AnnotationPanel {
                             if (this._onRefresh) this._onRefresh();
                         } catch (e) { showToast(e.message, 'error'); }
                     },
-                }, ['Del']),
+                }, ['×']),
             ]));
 
             // Annotations for this highlight
             for (const ann of hlAnns) {
-                item.appendChild(el('div', { style: 'margin-left:20px;font-size:13px;padding:4px 0' }, [
+                item.appendChild(el('div', { style: 'margin-left:0;font-size:13px;padding:4px 0' }, [
                     el('div', { style: 'color:var(--color-text-secondary);font-size:11px' }, [ann.annotation_type]),
-                    el('div', {}, [ann.content]),
+                    el('div', { className: 'ann-text' }, [ann.content]),
                 ]));
             }
 
             // Add annotation button
             item.appendChild(el('button', {
-                className: 'btn btn-sm',
-                style: 'margin-left:20px;margin-top:4px',
+                className: 'ann-add-note',
                 onClick: async () => {
                     const textarea = el('textarea', { className: 'form-textarea', placeholder: 'Add note...', style: 'min-height:50px;font-size:13px' });
                     const saveBtn = el('button', { className: 'btn btn-sm btn-primary', style: 'margin-top:4px' }, ['Save']);
                     textarea.addEventListener('keydown', (e) => { e.stopPropagation(); });
-                    const formDiv = el('div', { style: 'margin-left:20px' }, [textarea, saveBtn]);
+                    const formDiv = el('div', { style: 'margin-top:4px' }, [textarea, saveBtn]);
                     item.appendChild(formDiv);
 
                     saveBtn.addEventListener('click', async () => {

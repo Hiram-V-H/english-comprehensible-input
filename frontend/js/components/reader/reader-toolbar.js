@@ -17,25 +17,22 @@ export class ReaderToolbar {
 
         this.container.appendChild(el('div', { className: 'reader-toolbar' }, [
             el('button', {
-                className: 'btn btn-sm',
+                className: 'toolbar-back',
                 onClick: () => { if (this._onBack) this._onBack(); },
-            }, ['Back to Library']),
-            el('span', { style: 'font-weight:600;margin-left:8px' }, [a.title]),
-            el('span', { style: 'color:var(--color-text-secondary);font-size:13px;margin-left:8px' }, [
+            }, ['← Back']),
+            el('span', { className: 'toolbar-title' }, [a.title]),
+            el('span', { className: 'toolbar-stat' }, [
                 `${a.word_count || '?'} words`,
             ]),
-            a.unknown_word_count != null ? el('span', { className: 'badge badge-unknown', style: 'margin-left:8px' }, [
+            a.unknown_word_count != null ? el('span', { className: 'toolbar-stat' }, [
                 `${a.unknown_word_count} new`,
             ]) : null,
-            a.i_plus_one_score != null ? el('span', {
-                className: 'badge ' + (a.i_plus_one_score >= 0.7 ? 'badge-known' : a.i_plus_one_score >= 0.4 ? 'badge-learning' : 'badge-unknown'),
-                style: 'margin-left:4px',
-            }, [
-                a.i_plus_one_score >= 0.7 ? 'i+1 Ideal' : a.i_plus_one_score >= 0.4 ? 'Challenging' : 'Hard',
+            a.i_plus_one_score != null ? el('div', { className: 'toolbar-pill' }, [
+                el('span', { className: 'pill-dot' }),
+                a.i_plus_one_score >= 0.7 ? ' i+1 Ideal' : a.i_plus_one_score >= 0.4 ? ' Challenging' : ' Hard',
             ]) : null,
             el('button', {
-                className: 'btn btn-sm',
-                style: 'margin-left:auto',
+                className: 'toolbar-btn',
                 onClick: () => { if (this._onToggleHighlights) this._onToggleHighlights(); },
             }, ['Toggle Highlights']),
         ]));

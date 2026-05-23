@@ -1,5 +1,20 @@
 import { el, clearElement } from '../../utils/dom.js';
 
+const HIGHLIGHT_CLASSES = {
+    'yellow': 'hl-gold',
+    'green': 'hl-sage',
+    'blue': 'hl-lavender',
+    'pink': 'hl-terracotta',
+    'orange': 'hl-slate',
+    'gold': 'hl-gold',
+    'sage': 'hl-sage',
+    'lavender': 'hl-lavender',
+    'terracotta': 'hl-terracotta',
+    'slate': 'hl-slate',
+};
+
+const ALL_HL_CLASSES = ['hl-gold', 'hl-sage', 'hl-lavender', 'hl-terracotta', 'hl-slate'];
+
 /**
  * Renders colored background overlays for highlights on the reader.
  * Uses character offsets to find and mark word spans.
@@ -31,25 +46,23 @@ export class HighlightOverlay {
     }
 
     _applyCharOffsetHighlight(hl, paragraphs) {
-        // Find all word spans whose char_offset falls within the highlight range
+        const cssClass = HIGHLIGHT_CLASSES[hl.color] || 'hl-gold';
         const wordSpans = this.container.querySelectorAll('.word');
         for (const span of wordSpans) {
             const charOffset = parseInt(span.dataset.charOffset);
-            const wordLen = span.textContent.length;
             if (!isNaN(charOffset) && charOffset >= hl.start_char_offset && charOffset < hl.end_char_offset) {
-                span.style.backgroundColor = (hl.color || '#FFEB3B') + '44';
-                span.style.borderRadius = '2px';
+                span.classList.add(cssClass);
             }
         }
     }
 
     _applyPositionHighlight(hl) {
+        const cssClass = HIGHLIGHT_CLASSES[hl.color] || 'hl-gold';
         const spans = this.container.querySelectorAll('.word');
         for (const span of spans) {
             const pos = parseInt(span.dataset.position);
             if (!isNaN(pos) && pos >= hl.start_word_position && pos <= hl.end_word_position) {
-                span.style.backgroundColor = (hl.color || '#FFEB3B') + '44';
-                span.style.borderRadius = '2px';
+                span.classList.add(cssClass);
             }
         }
     }
@@ -57,8 +70,7 @@ export class HighlightOverlay {
     removeAll() {
         const spans = this.container.querySelectorAll('.word');
         for (const span of spans) {
-            span.style.backgroundColor = '';
-            span.style.borderRadius = '';
+            span.classList.remove(...ALL_HL_CLASSES);
         }
     }
 }

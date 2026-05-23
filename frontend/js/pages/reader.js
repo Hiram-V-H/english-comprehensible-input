@@ -26,15 +26,18 @@ export function readerPage(main, articleId) {
             main.style.padding = '0';
             main.style.maxWidth = 'none';
 
+            // ── Outer container ──
+            const readerContainer = el('div', { className: 'reader-container' });
+
             // ── Book chapter navigation ──
             if (readerData.book) {
                 const navEl = renderChapterNav(readerData.book, articleId);
-                main.appendChild(navEl);
+                readerContainer.appendChild(navEl);
             }
 
             // Toolbar
             const toolbarEl = el('div');
-            main.appendChild(toolbarEl);
+            readerContainer.appendChild(toolbarEl);
             const toolbar = new ReaderToolbar(toolbarEl, readerData.article);
             toolbar.setOnBack(() => {
                 if (sessionId) { api.endSession(articleId, sessionId, {}).catch(() => {}); }
@@ -54,14 +57,16 @@ export function readerPage(main, articleId) {
             });
             toolbar.render();
 
-            // Layout: content + sidebar
-            const layout = el('div', { className: 'reader-layout' });
+            // ── Body: content + sidebar ──
+            const bodyEl = el('div', { className: 'reader-body' });
 
-            // Article content
+            // Content area
             const contentEl = el('div', { className: 'reader-content' });
-            contentEl.style.position = 'relative';
 
-            const display = new ArticleDisplay(contentEl, {
+            // Text container
+            const textEl = el('div', { className: 'reader-text' });
+
+            const display = new ArticleDisplay(textEl, {
                 onWordClick: (wordData) => {
                     popup.show(wordData);
                     if (wordData.wordId) {
@@ -87,6 +92,8 @@ export function readerPage(main, articleId) {
 
             const overlay = new HighlightOverlay(contentEl);
 
+            contentEl.appendChild(textEl);
+
             // Sidebar — annotations or book TOC
             const sidebarEl = el('div', { className: 'reader-sidebar' });
             const panel = new AnnotationPanel(sidebarEl);
@@ -106,9 +113,10 @@ export function readerPage(main, articleId) {
                 sidebarEl.appendChild(tocEl);
             }
 
-            layout.appendChild(contentEl);
-            layout.appendChild(sidebarEl);
-            main.appendChild(layout);
+            bodyEl.appendChild(contentEl);
+            bodyEl.appendChild(sidebarEl);
+            readerContainer.appendChild(bodyEl);
+            main.appendChild(readerContainer);
 
             // Render
             display.render(readerData);
@@ -144,7 +152,7 @@ function renderChapterNav(book, currentArticleId) {
     const bar = el('div', { className: 'chapter-nav' });
 
     const prevBtn = el('button', {
-        className: 'btn btn-sm',
+        className: 'chapter-nav-btn',
         disabled: !book.prev_chapter ? '' : undefined,
         onClick: () => { if (book.prev_chapter) router.navigate('#/reader/' + book.prev_chapter.id); },
     }, [book.prev_chapter ? '◀ ' + book.prev_chapter.title : '◀']);
@@ -161,7 +169,7 @@ function renderChapterNav(book, currentArticleId) {
     ]));
 
     const nextBtn = el('button', {
-        className: 'btn btn-sm',
+        className: 'chapter-nav-btn',
         disabled: !book.next_chapter ? '' : undefined,
         onClick: () => { if (book.next_chapter) router.navigate('#/reader/' + book.next_chapter.id); },
     }, [book.next_chapter ? book.next_chapter.title + ' ▶' : '▶']);
