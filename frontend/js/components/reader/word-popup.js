@@ -54,8 +54,10 @@ export class WordPopup {
 
             if (!word) {
                 popup.innerHTML = '';
-                popup.appendChild(el('div', { className: 'popup-word' }, [wd.wordText]));
-                popup.appendChild(el('div', { className: 'popup-status status-unknown' }, ['new word']));
+                popup.appendChild(el('div', { className: 'popup-header' }, [
+                    el('span', { className: 'popup-word' }, [wd.wordText]),
+                    el('span', { className: 'popup-status status-unknown' }, ['new word']),
+                ]));
                 return;
             }
 
@@ -70,15 +72,13 @@ export class WordPopup {
     _renderPopup(popup, word, wd) {
         clearElement(popup);
 
-        // Header area: word text + phonetic + status badge
-        popup.appendChild(el('div', { className: 'popup-word' }, [
-            word.word,
+        // Header row: word + phonetic + status badge on one line
+        popup.appendChild(el('div', { className: 'popup-header' }, [
+            el('span', { className: 'popup-word' }, [word.word]),
             word.pronunciation ? el('span', { className: 'popup-phonetic' }, ['/' + word.pronunciation + '/']) : null,
-        ]));
-
-        // Status badge
-        popup.appendChild(el('div', { className: 'popup-status status-' + (word.status || 'unknown') }, [
-            word.status || 'unknown',
+            el('span', { className: 'popup-status status-' + (word.status || 'unknown') }, [
+                word.status || 'unknown',
+            ]),
         ]));
 
         // Definition (notes content as closest equivalent)

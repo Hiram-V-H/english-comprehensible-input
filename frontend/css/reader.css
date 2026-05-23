@@ -159,6 +159,13 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+.word-popup .popup-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
 .word-popup .popup-word {
     font-size: 20px;
     font-weight: 700;
@@ -168,15 +175,14 @@
 .word-popup .popup-phonetic {
     color: var(--color-text-subtle);
     font-size: 13px;
-    margin-left: 6px;
 }
 
 .word-popup .popup-status {
-    float: right;
+    display: inline-block;
     padding: 2px 8px;
     border-radius: var(--radius-pill);
     font-size: 10px;
-    margin-top: 2px;
+    flex-shrink: 0;
 }
 
 .word-popup .popup-status.status-unknown {
@@ -203,7 +209,7 @@
 .word-popup .popup-status-selector {
     display: flex;
     gap: 6px;
-    margin: 8px 0;
+    margin: 12px 0 8px;
 }
 
 .word-popup .popup-status-selector .status-btn {
