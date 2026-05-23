@@ -1,0 +1,9 @@
+[project]
+name = "comprehensible-input"
+version = "0.1.0"
+description = "Comprehensible Input English Learning System"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

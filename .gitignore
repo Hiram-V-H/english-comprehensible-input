@@ -1,0 +1,25 @@
+# Database files (contain user data, not code)
+data/
+vocabulary.db
+
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Temp
+*.tmp
+*.temp

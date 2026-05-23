@@ -1,0 +1,23 @@
+/* Vocabulary page */
+.word-table { width: 100%; border-collapse: collapse; }
+.word-table th {
+    text-align: left; padding: 10px 14px;
+    border-bottom: 2px solid var(--color-border);
+    font-size: 12px; font-weight: 600; color: var(--color-text-secondary);
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+.word-table td {
+    padding: 8px 14px; border-bottom: 1px solid var(--color-border);
+    font-size: 14px;
+}
+.word-table tr:hover td { background: #fafafa; }
+.word-text { font-weight: 600; cursor: pointer; color: var(--color-primary); }
+.word-text:hover { text-decoration: underline; }
+.word-notes-preview { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-text-secondary); }
+
+/* Word detail */
+.word-detail-header { margin-bottom: 24px; }
+.word-detail-title { font-size: 28px; font-weight: 700; }
+.word-detail-meta { display: flex; gap: 16px; margin-top: 8px; align-items: center; }
+.note-card { margin-bottom: 12px; }
+.note-type-badge { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
