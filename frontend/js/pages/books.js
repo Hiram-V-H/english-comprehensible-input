@@ -1,6 +1,5 @@
 import { el } from '../utils/dom.js';
 import { router } from '../router.js';
-import { formatDate } from '../utils/formatters.js';
 
 const STRIPE_GRADIENTS = [
     'linear-gradient(90deg, #8b6a4a, #c4a040, #6b4a2a)',
