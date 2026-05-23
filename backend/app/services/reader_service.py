@@ -110,6 +110,7 @@ async def assemble_reader_payload(db: AsyncSession, article_id: int) -> Dict[str
             "difficulty_score": article.difficulty_score,
             "unknown_word_count": article.unknown_word_count,
             "i_plus_one_score": article.i_plus_one_score,
+            "annotated_html": article.annotated_html,
         },
         "book": book_context,
         "paragraphs": paragraphs,

@@ -47,7 +47,7 @@ export class HighlightOverlay {
 
     _applyCharOffsetHighlight(hl, paragraphs) {
         const cssClass = HIGHLIGHT_CLASSES[hl.color] || 'hl-gold';
-        const wordSpans = this.container.querySelectorAll('.word');
+        const wordSpans = this.container.querySelectorAll('[data-position]');
         for (const span of wordSpans) {
             const charOffset = parseInt(span.dataset.charOffset);
             if (!isNaN(charOffset) && charOffset >= hl.start_char_offset && charOffset < hl.end_char_offset) {
@@ -58,7 +58,7 @@ export class HighlightOverlay {
 
     _applyPositionHighlight(hl) {
         const cssClass = HIGHLIGHT_CLASSES[hl.color] || 'hl-gold';
-        const spans = this.container.querySelectorAll('.word');
+        const spans = this.container.querySelectorAll('[data-position]');
         for (const span of spans) {
             const pos = parseInt(span.dataset.position);
             if (!isNaN(pos) && pos >= hl.start_word_position && pos <= hl.end_word_position) {
@@ -68,7 +68,7 @@ export class HighlightOverlay {
     }
 
     removeAll() {
-        const spans = this.container.querySelectorAll('.word');
+        const spans = this.container.querySelectorAll('[data-position]');
         for (const span of spans) {
             span.classList.remove(...ALL_HL_CLASSES);
         }

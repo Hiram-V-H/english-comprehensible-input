@@ -6,10 +6,14 @@ export class ReaderToolbar {
         this.articleData = articleData;
         this._onBack = null;
         this._onToggleHighlights = null;
+        this._onFontSizeChange = null;
+        this._onThemeToggle = null;
     }
 
     setOnBack(cb) { this._onBack = cb; }
     setOnToggleHighlights(cb) { this._onToggleHighlights = cb; }
+    setOnFontSizeChange(cb) { this._onFontSizeChange = cb; }
+    setOnThemeToggle(cb) { this._onThemeToggle = cb; }
 
     render() {
         clearElement(this.container);
@@ -31,6 +35,22 @@ export class ReaderToolbar {
                 el('span', { className: 'pill-dot' }),
                 a.i_plus_one_score >= 0.7 ? ' i+1 Ideal' : a.i_plus_one_score >= 0.4 ? ' Challenging' : ' Hard',
             ]) : null,
+            el('span', { style: 'flex:1' }),
+            el('button', {
+                className: 'toolbar-btn',
+                title: 'Decrease font size',
+                onClick: () => { if (this._onFontSizeChange) this._onFontSizeChange(-1); },
+            }, ['A−']),
+            el('button', {
+                className: 'toolbar-btn',
+                title: 'Increase font size',
+                onClick: () => { if (this._onFontSizeChange) this._onFontSizeChange(1); },
+            }, ['A+']),
+            el('button', {
+                className: 'toolbar-btn',
+                title: 'Toggle dark/light theme',
+                onClick: () => { if (this._onThemeToggle) this._onThemeToggle(); },
+            }, ['◐']),
             el('button', {
                 className: 'toolbar-btn',
                 onClick: () => { if (this._onToggleHighlights) this._onToggleHighlights(); },

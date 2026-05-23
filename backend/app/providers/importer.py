@@ -55,6 +55,7 @@ class ChapterInfo:
     word_count: int = 0             # estimated word count (filled after parsing)
     selected: bool = True           # user wants to import this chapter
     text_content: str = ""          # populated after import_chapters() for selected chapters
+    content_html: str = ""          # clean semantic HTML (stripped CSS/images/scripts)
 
 
 @dataclass

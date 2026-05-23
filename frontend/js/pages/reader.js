@@ -2,6 +2,8 @@ import { el, clearElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { router } from '../router.js';
 import { ArticleDisplay } from '../components/reader/article-display.js';
+import { ContentRenderer } from '../components/reader/content-renderer.js';
+import { applyWordAnnotations, updateWordStatus } from '../components/reader/annotator.js';
 import { WordPopup } from '../components/reader/word-popup.js';
 import { SelectionHandler } from '../components/reader/selection-handler.js';
 import { HighlightOverlay } from '../components/reader/highlight-overlay.js';
@@ -16,6 +18,7 @@ export function readerPage(main, articleId) {
     let readerData = null;
     let sessionId = null;
     let highlightsVisible = true;
+    let isNativeRenderer = false;  // true when using ContentRenderer (annotated_html)
 
     (async () => {
         try {
@@ -60,24 +63,49 @@ export function readerPage(main, articleId) {
 
             // ── Body: content + sidebar ──
             const bodyEl = el('div', { className: 'reader-body' });
-
-            // Content area
             const contentEl = el('div', { className: 'reader-content' });
-
-            // Text container
             const textEl = el('div', { className: 'reader-text' });
 
-            const display = new ArticleDisplay(textEl, {
-                onWordClick: (wordData) => {
-                    popup.show(wordData);
-                    if (wordData.wordId) {
-                        api.recordEncounter(articleId, wordData.wordId).catch(() => {});
-                    }
-                },
-                onSelectionComplete: (selData) => {
-                    selectionHandler.showMenu(selData);
-                },
-            });
+            // Determine rendering path: native HTML or legacy ArticleDisplay
+            const hasAnnotatedHtml = readerData.article.annotated_html;
+            let display;  // unified interface: { render(), updateWordStatus() }
+            let renderer = null;
+
+            if (hasAnnotatedHtml) {
+                isNativeRenderer = true;
+                renderer = new ContentRenderer(textEl);
+                display = {
+                    render(data) {
+                        renderer.render(data.article.annotated_html);
+                        applyWordAnnotations(textEl, data.paragraphs);
+                    },
+                    updateWordStatus(pos, status) {
+                        updateWordStatus(textEl, pos, status);
+                    },
+                };
+
+                // Wire toolbar font-size and theme controls
+                toolbar.setOnFontSizeChange((delta) => {
+                    renderer.setFontSize(renderer.fontSize + delta);
+                });
+                toolbar.setOnThemeToggle(() => {
+                    const next = renderer.theme === 'dark' ? 'light' : 'dark';
+                    renderer.setTheme(next);
+                });
+            } else {
+                const articleDisplay = new ArticleDisplay(textEl, {
+                    onWordClick: (wordData) => {
+                        popup.show(wordData);
+                        if (wordData.wordId) {
+                            api.recordEncounter(articleId, wordData.wordId).catch(() => {});
+                        }
+                    },
+                    onSelectionComplete: (selData) => {
+                        selectionHandler.showMenu(selData);
+                    },
+                });
+                display = articleDisplay;
+            }
 
             const popup = new WordPopup();
             popup.setOnStatusChange((position, newStatus) => {
@@ -108,7 +136,6 @@ export function readerPage(main, articleId) {
                 panel.refresh(readerData);
             });
 
-            // If book, show TOC in sidebar
             if (readerData.book) {
                 const tocEl = renderBookTOC(readerData.book, articleId);
                 sidebarEl.appendChild(tocEl);
@@ -119,8 +146,27 @@ export function readerPage(main, articleId) {
             readerContainer.appendChild(bodyEl);
             main.appendChild(readerContainer);
 
-            // Render
+            // Render content
             display.render(readerData);
+
+            // For native renderer, bind word click after DOM is populated
+            if (isNativeRenderer) {
+                textEl.addEventListener('click', (e) => {
+                    const wordEl = e.target.closest('[data-position]');
+                    if (!wordEl) return;
+                    if (wordEl.dataset.status === 'punct') return;
+                    const rect = wordEl.getBoundingClientRect();
+                    popup.show({
+                        wordId: wordEl.dataset.wordId || null,
+                        wordText: wordEl.textContent,
+                        wordLower: wordEl.dataset.wordLower || wordEl.textContent.toLowerCase(),
+                        status: wordEl.dataset.status || 'unknown',
+                        position: parseInt(wordEl.dataset.position),
+                        rect,
+                    });
+                });
+            }
+
             overlay.apply(readerData.highlights, readerData.paragraphs);
             panel.render(articleId, readerData.highlights, readerData.annotations);
 
@@ -192,7 +238,6 @@ function renderBookTOC(book, currentArticleId) {
     if (book.toc_tree && book.toc_tree.length > 0) {
         toc.appendChild(renderTocTree(book.toc_tree, chapterMap, parseInt(currentArticleId)));
     } else {
-        // Fallback: flat chapter list
         for (const ch of (book.all_chapters || [])) {
             const isCurrent = ch.id === parseInt(currentArticleId);
             const link = el('a', {

@@ -1,6 +1,6 @@
 /**
  * Maps DOM selections to character offsets relative to the article's plain text.
- * Each word span has data-char-offset="N" indicating its character position in content_text.
+ * Each word span has data-position="N" and data-char-offset="M" attributes.
  */
 
 export function getSelectionCharOffsets(container) {
@@ -26,18 +26,16 @@ export function getSelectionCharOffsets(container) {
 function getCharOffset(container, node, offset, which) {
     // Walk up to find a word span or the container itself
     let el = node.nodeType === 3 ? node.parentElement : node;
-    while (el && el !== container && !el.classList.contains('word')) {
+    while (el && el !== container && !el.hasAttribute('data-position')) {
         el = el.parentElement;
     }
 
-    if (el && el.classList.contains('word')) {
+    if (el && el.hasAttribute('data-position')) {
         const charOffset = parseInt(el.dataset.charOffset);
         if (!isNaN(charOffset)) {
-            // If at start of the word, use the word's char_offset
             if (offset === 0 || which === 'start') {
                 return charOffset;
             }
-            // If at end, add the word's text length
             const wordText = el.textContent;
             if (offset >= wordText.length || which === 'end') {
                 return charOffset + wordText.length;
@@ -47,7 +45,7 @@ function getCharOffset(container, node, offset, which) {
     }
 
     // Fallback: find the nearest word span
-    const allWords = container.querySelectorAll('.word');
+    const allWords = container.querySelectorAll('[data-position]');
     if (which === 'start') {
         for (const w of allWords) {
             if (container.compareDocumentPosition(w) & Node.DOCUMENT_POSITION_FOLLOWING) {
@@ -66,8 +64,8 @@ function getCharOffset(container, node, offset, which) {
 }
 
 /**
- * Given an article's plain text and char offsets, compute which word positions are inside the highlight.
- * Returns { start_word_position, end_word_position } or null.
+ * Given an article's paragraphs data and char offsets, compute which word positions
+ * are inside the highlight. Returns { start_word_position, end_word_position } or null.
  */
 export function charOffsetsToWordPositions(paragraphs, startCharOffset, endCharOffset) {
     let startPos = null, endPos = null;

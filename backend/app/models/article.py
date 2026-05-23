@@ -22,6 +22,7 @@ class Article(Base, TimestampMixin):
     )
     content_text: Mapped[str] = mapped_column(Text, nullable=False)
     content_html: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    annotated_html: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     word_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     language: Mapped[str] = mapped_column(String(10), nullable=False, default="en")
     sha256_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)

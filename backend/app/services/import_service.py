@@ -138,7 +138,9 @@ async def _save_article(db: AsyncSession, data: ImportedArticle) -> Tuple[int, b
     db.add(article)
     await db.flush()
 
-    # Create article_word entries
+    # Create article_word entries + build token list for span injection
+    span_tokens: list = []
+
     for token in tokens:
         if token.is_punctuation or not _has_letter(token.text):
             aw = ArticleWord(
@@ -150,6 +152,7 @@ async def _save_article(db: AsyncSession, data: ImportedArticle) -> Tuple[int, b
                 sentence_index=token.sentence_index,
                 is_punctuation=True,
             )
+            span_tokens.append((token.text, token.position, None, token.char_offset))
         else:
             word_record = await get_or_create_word(db, token.text)
             aw = ArticleWord(
@@ -162,7 +165,13 @@ async def _save_article(db: AsyncSession, data: ImportedArticle) -> Tuple[int, b
                 is_unknown_at_import=(word_record.status == "unknown"),
                 is_punctuation=False,
             )
+            span_tokens.append((token.text, token.position, word_record.id, token.char_offset))
         db.add(aw)
+
+    # Generate annotated HTML from clean HTML if provided
+    if data.content_html:
+        from ..importers.epub_importer import inject_word_spans
+        article.annotated_html = inject_word_spans(data.content_html, span_tokens)
 
     # Record import
     record = ImportRecord(
@@ -250,6 +259,8 @@ async def import_book_chapters(
     await db.flush()
 
     imported_count = 0
+    saved_article_ids = []
+
     for ch in result.chapters:
         if not ch.selected or not ch.text_content:
             continue
@@ -257,18 +268,28 @@ async def import_book_chapters(
         article_data = ImportedArticle(
             title=ch.title,
             content_text=ch.text_content,
+            content_html=ch.content_html,
             source_path=ch.source_path,
             source_type="epub_chapter",
             sha256_hash=hashlib.sha256(ch.text_content.encode("utf-8")).hexdigest(),
         )
 
-        article_id, _ = await _save_book_chapter(
+        article_id, is_new = await _save_book_chapter(
             db, article_data, book.id, ch.index
         )
         imported_count += 1
+        if is_new:
+            saved_article_ids.append(article_id)
 
     book.total_chapters = imported_count
     await db.commit()
+
+    # Run analysis on newly saved articles
+    if saved_article_ids:
+        from ..analysis.composite import CompositeAnalyzer
+        analyzer = CompositeAnalyzer()
+        for article_id in saved_article_ids:
+            await analyzer.analyze_and_persist(article_id, db)
 
     return {"book_id": book.id, "status": "imported", "articles_imported": imported_count}
 
@@ -305,6 +326,8 @@ async def _save_book_chapter(
     db.add(article)
     await db.flush()
 
+    span_tokens: list = []
+
     for token in tokens:
         if token.is_punctuation or not _has_letter(token.text):
             aw = ArticleWord(
@@ -313,6 +336,7 @@ async def _save_book_chapter(
                 position=token.position, sentence_index=token.sentence_index,
                 is_punctuation=True,
             )
+            span_tokens.append((token.text, token.position, None, token.char_offset))
         else:
             word_record = await get_or_create_word(db, token.text)
             aw = ArticleWord(
@@ -322,7 +346,12 @@ async def _save_book_chapter(
                 is_unknown_at_import=(word_record.status == "unknown"),
                 is_punctuation=False,
             )
+            span_tokens.append((token.text, token.position, word_record.id, token.char_offset))
         db.add(aw)
+
+    if data.content_html:
+        from ..importers.epub_importer import inject_word_spans
+        article.annotated_html = inject_word_spans(data.content_html, span_tokens)
 
     # Record import
     record = ImportRecord(
@@ -334,11 +363,7 @@ async def _save_book_chapter(
         imported_at=datetime.now(),
     )
     db.add(record)
-    await db.commit()
-
-    # Run analysis
-    from ..analysis.composite import CompositeAnalyzer
-    analyzer = CompositeAnalyzer()
-    await analyzer.analyze_and_persist(article.id, db)
+    # Flush only — caller handles commit + analysis
+    await db.flush()
 
     return article.id, True

@@ -45,11 +45,27 @@ This is a full-stack **Comprehensible Input English Learning System**: FastAPI (
 **Reader endpoint design** (`GET /api/reader/{id}`):
 - Backend pre-computes the full reader payload: paragraphs of word tokens, each with `position`, `word_id`, `status` (known/unknown/punct), `char_offset` — the frontend never does its own tokenization or vocabulary lookup
 - `_compute_char_offsets()` omits spaces before punctuation tokens to match real text rendering
+- **`annotated_html` field**: when an article has `annotated_html` (generated during EPUB import), the frontend renders it directly as semantic HTML via `ContentRenderer`; articles without it (txt, md, legacy imports) fall back to `ArticleDisplay` which builds DOM from token arrays
 
 **Character-offset highlight anchoring** (`frontend/js/utils/text-offset.js`):
 - Highlights are stored as `(start_char_offset, end_char_offset)` into `article.content_text`, not as DOM nodes
 - Word spans render with `data-char-offset` attributes; when the user selects text, offsets are computed from the DOM, and when highlights are rendered, offsets are mapped back to word spans
 - This means the renderer can be rewritten (React, canvas, etc.) without losing highlight data
+- **Selector contract**: uses `[data-position]` attribute selectors, compatible with both `ContentRenderer` (annotated HTML) and `ArticleDisplay` (JS-built DOM) paths
+
+**Reader Core / Learning Overlay separation**:
+- **Reader Core** (`ContentRenderer` in `frontend/js/components/reader/content-renderer.js`): renders `annotated_html` via innerHTML; manages font size, line height, light/dark theme; settings persisted to localStorage; knows NOTHING about word status, highlights, or vocabulary
+- **Learning Overlay** (`annotator.js` in `frontend/js/components/reader/annotator.js`): post-render step that walks `[data-position]` spans and adds `word--{status}` CSS classes based on `paragraphs[].words[].status` data; `updateWordStatus()` updates a single span's class when the user changes a word's learning status
+- **Fallback**: when `annotated_html` is null (txt, md, legacy EPUB imports), the reader uses the legacy `ArticleDisplay` class which builds the DOM from paragraph token arrays — fully backward compatible
+- Highlight overlay, word popup, selection handler, and annotation panel all work through `[data-position]` attribute selectors, agnostic to which rendering path is active
+
+**EPUB import: clean HTML + span injection pipeline**:
+- `_html_to_clean_html()` (`backend/app/importers/epub_importer.py`): HTMLParser-based; strips `<script>`, `<style>`, `<img>`, `<svg>`, inline CSS; removes `class`/`id`/`style` attributes; preserves semantic tags (`<h1>`-`<h6>`, `<p>`, `<em>`, `<strong>`, `<blockquote>`, `<ul>`/`<ol>`/`<li>`, `<a href="...">`); decodes HTML entities
+- `inject_word_spans()` (`backend/app/importers/epub_importer.py`): walks clean HTML text nodes, matches tokens by text in order, injects `<span data-position="N" data-char-offset="M" data-word-lower="w" data-word-id="M">` around each token; whitespace passes through unchanged; token mismatches emit as-is with a console warning
+- **Import flow**: `_save_book_chapter` / `_save_article` tokenize `content_text` → build `span_tokens` list during `ArticleWord` creation → call `inject_word_spans(data.content_html, span_tokens)` → store in `Article.annotated_html`
+- **Commit pattern**: `_save_book_chapter` only flushes (no commit); `import_book_chapters` calls `db.commit()` once after all chapters saved, then runs `CompositeAnalyzer` in batch — avoids per-article commit session-state conflicts
+- **Deduplication**: `_parse_ncx` and `_parse_nav` use a `seen_paths` set to skip duplicate `source_path` values; TOC tree retains full hierarchy, flat chapter list contains only unique files
+- `Article.annotated_html` column added by migration `007_add_annotated_html.py`
 
 **Composite analyzer** (`backend/app/analysis/composite.py`):
 - Pluggable algorithms (word count, unknown word detection, coverage, i+1 scoring) all implement `AnalysisAlgorithm` ABC
@@ -77,6 +93,12 @@ This is a full-stack **Comprehensible Input English Learning System**: FastAPI (
   - `buildChapterMap(chapters)` — builds `{chapter_path → article_id}` lookup from flat chapter arrays
   - Expand/collapse: arrow toggle (`▸`/`▾`), `defaultCollapseDepth = 2`, depth ≥ 2 collapsed by default
   - TOC tree gracefully falls back to flat list when `toc_tree` is null/empty
+- **Reader components** (`frontend/js/components/reader/`):
+  - `content-renderer.js` — Reader Core: `render(annotatedHtml)` via innerHTML; `setFontSize/LineHeight/Theme` persisted to localStorage
+  - `annotator.js` — Learning Overlay: `applyWordAnnotations(container, paragraphs)` walks `[data-position]` spans and adds `word--{status}` classes; `updateWordStatus(container, position, newStatus)` for single-word status changes
+  - `article-display.js` — Legacy fallback: builds DOM from `paragraphs[].words[]` token arrays; used when `annotated_html` is null
+  - `highlight-overlay.js` — Uses `[data-position]` selector; compatible with both rendering paths
+  - `reader-toolbar.js` — Back, title, word count, i+1 score, font size A−/A+, theme toggle ◐, highlights toggle
 
 ### Design system (Rich Mahogany editorial)
 
@@ -89,7 +111,7 @@ This is a full-stack **Comprehensible Input English Learning System**: FastAPI (
 - **Typography**: `--font-display: "Spectral", Georgia, serif` (headings), `--font-body: "Crimson Text", Georgia, serif` (content/reading), loaded from Google Fonts in `index.html`
 - **Backward-compatible aliases** (`--color-primary-light` → `--color-accent-light`, `--shadow` → `--shadow-card`, `--font-serif` → `--font-body`) preserve references in code not yet migrated
 - **Responsive breakpoint**: 768px — sidebar auto-collapses to icon-only, grid becomes single-column, reader font shrinks to 16px
-- **CSS file roles**: `base.css` (tokens, reset, sidebar, buttons, badges, forms), `components.css` (toast, modal, cards, pagination, drop zone, tables, TOC tree), `reader.css` (reader layout, word states, popup, highlights, annotation panel), `vocabulary.css` (stats bar, word table, word detail, note cards)
+- **CSS file roles**: `base.css` (tokens, reset, sidebar, buttons, badges, forms), `components.css` (toast, modal, cards, pagination, drop zone, tables, TOC tree), `reader.css` (reader layout, word states, popup, highlights, annotation panel, native HTML reader typography, dark theme), `vocabulary.css` (stats bar, word table, word detail, note cards)
 
 ### Import page: three-way input
 
@@ -105,6 +127,9 @@ This is a full-stack **Comprehensible Input English Learning System**: FastAPI (
 - Deduplication: `articles.sha256_hash UNIQUE`, `words.word_lower UNIQUE`
 - `user_id` column defaults to `"default"` everywhere — multi-user is reserved but not implemented
 - `Book.toc_json` (Text) stores the full hierarchical TOC tree as JSON; read by book-detail and reader endpoints; `Article.chapter_path` is the matching key for `TocItem.href → chapter_path → article.id` lookup in the frontend
+- `Article.annotated_html` (Text) stores the clean semantic HTML with injected `<span data-position="N">` tags; generated at import time by `inject_word_spans()`; null for non-EPUB or legacy imports
+- `Article.sha256_hash` deduplication: `_parse_ncx`/`_parse_nav` use `seen_paths` set to avoid creating duplicate `ChapterInfo` entries for the same `source_path`; TOC tree retains full hierarchy regardless
+- Import commit pattern: `_save_book_chapter` uses `db.flush()` only; `import_book_chapters` calls `db.commit()` once after all chapters are saved, then runs batch analysis — avoids per-article commit session-state conflicts
 
 ### Test setup (`backend/tests/conftest.py`)
 
