@@ -86,7 +86,7 @@ export function booksPage(main) {
                 card.style.transition = 'opacity 0.15s';
                 setTimeout(() => card.remove(), 150);
             }
-            showToast('已删除「${book.title}」', 'success');
+            showToast(`已删除「${book.title}」`, 'success');
         } catch (err) {
             showToast('删除失败，请重试', 'error');
         }

@@ -30,7 +30,7 @@ export function bookDetailPage(main, bookId) {
 
             try {
                 await fetch(`/api/books/${book.id}`, { method: 'DELETE' });
-                showToast('已删除「${book.title}」', 'success');
+                showToast(`已删除「${book.title}」`, 'success');
                 router.navigate('#/books');
             } catch (err) {
                 showToast('删除失败，请重试', 'error');
