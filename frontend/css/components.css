@@ -480,3 +480,38 @@
 .toc-tree-children.collapsed {
     display: none;
 }
+
+/* ── Mobile responsiveness ────────────────────────────────── */
+
+@media (max-width: 768px) {
+    /* Always show card actions on touch devices */
+    .card-actions {
+        opacity: 1;
+        position: static;
+        justify-content: flex-end;
+        margin-bottom: 4px;
+    }
+
+    .article-card {
+        position: relative;
+    }
+
+    /* Full-width modals on mobile */
+    .modal-box {
+        margin: 16px;
+        max-width: none;
+        width: auto;
+    }
+
+    /* Batch bar stacks on mobile */
+    .batch-bar {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .batch-bar-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
