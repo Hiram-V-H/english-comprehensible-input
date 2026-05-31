@@ -9,7 +9,10 @@ from __future__ import annotations
 import re
 
 # Ordered longest-first so "they're" matches before "we're" as a substring issue.
-# The regex uses word-boundary-aware replacement to avoid partial matches.
+# All keys are lowercase — IGNORECASE and the _replace function handle
+# capitalization at match time, so uppercase-only variants are redundant.
+# Entries starting with "'" (archaic forms like 'tis, 'twas) use (?<!\w)
+# as their leading boundary since \b does not work before a non-\w character.
 _CONTRACTION_MAP: dict[str, str] = {
     # ── Negations ──
     "don't": "do not",
@@ -36,7 +39,6 @@ _CONTRACTION_MAP: dict[str, str] = {
     "shan't": "shall not",
 
     # ── to-be / to-have / will / would ──
-    "I'm": "I am",
     "i'm": "i am",
     "we're": "we are",
     "you're": "you are",
@@ -54,13 +56,11 @@ _CONTRACTION_MAP: dict[str, str] = {
     "there's": "there is",
     "here's": "here is",
 
-    "I've": "I have",
     "i've": "i have",
     "we've": "we have",
     "you've": "you have",
     "they've": "they have",
 
-    "I'll": "I will",
     "i'll": "i will",
     "we'll": "we will",
     "you'll": "you will",
@@ -70,7 +70,6 @@ _CONTRACTION_MAP: dict[str, str] = {
     "it'll": "it will",
     "there'll": "there will",
 
-    "I'd": "I would",
     "i'd": "i would",
     "we'd": "we would",
     "you'd": "you would",
@@ -102,12 +101,28 @@ _CONTRACTION_MAP: dict[str, str] = {
     "'twould": "it would",
 }
 
-# Build a single regex that matches any contraction key, longest-first
-_PATTERN_STR = '|'.join(
-    re.escape(k) for k in sorted(_CONTRACTION_MAP.keys(), key=len, reverse=True)
+# Separate entries that start with apostrophe (archaic forms like 'tis)
+# from regular entries.  \b does not work before a leading apostrophe
+# because ' is not a \w character, so we use (?<!\w) instead.
+_apostrophe_keys: list[str] = sorted(
+    (k for k in _CONTRACTION_MAP if k.startswith("'")),
+    key=len, reverse=True,
 )
-# Word-boundary-aware: match only when the contraction is a standalone token
-_CONTRACTION_RE = re.compile(r'\b(' + _PATTERN_STR + r')\b', re.IGNORECASE)
+_regular_keys: list[str] = sorted(
+    (k for k in _CONTRACTION_MAP if not k.startswith("'")),
+    key=len, reverse=True,
+)
+
+_ApostrophePattern = '|'.join(re.escape(k) for k in _apostrophe_keys)
+_RegularPattern = '|'.join(re.escape(k) for k in _regular_keys)
+
+# For apostrophe entries: (?<!\w) matches after non-word boundary (space,
+# punctuation, or start-of-string).  For regular entries: standard \b.
+_CONTRACTION_RE = re.compile(
+    rf'(?<!\w)(?:{_ApostrophePattern})\b'
+    rf'|\b(?:{_RegularPattern})\b',
+    re.IGNORECASE,
+)
 
 
 def expand(text: str) -> str:
@@ -115,8 +130,12 @@ def expand(text: str) -> str:
     def _replace(m: re.Match) -> str:
         original = m.group(0)
         replacement = _CONTRACTION_MAP.get(original.lower(), original)
-        # Preserve capitalization of first letter
-        if original[0].isupper():
+        # Find the first alphabetic character for capitalization check,
+        # since archaic forms like 'Tis start with a non-letter apostrophe.
+        first_alpha_idx = next(
+            (i for i, c in enumerate(original) if c.isalpha()), 0
+        )
+        if first_alpha_idx < len(original) and original[first_alpha_idx].isupper():
             return replacement[0].upper() + replacement[1:]
         return replacement
 
