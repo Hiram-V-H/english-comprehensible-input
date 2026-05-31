@@ -19,6 +19,7 @@ from ..models.book import Book
 from ..models.import_record import ImportRecord
 from ..providers.importer import BookImportResult, ImportedArticle
 from .tokenizer import tokenize
+from .contractions import expand as expand_contractions
 from .vocabulary import get_or_create_word
 
 
@@ -54,6 +55,9 @@ async def import_content(
     filename: str,
     registry: ImporterRegistry,
     title: str | None = None,
+    exam_type: str | None = None,
+    exam_year: int | None = None,
+    question_type: str | None = None,
 ) -> Tuple[int, bool]:
     """Import from uploaded content. Returns (article_id, is_new)."""
     extension = Path(filename).suffix.lower()
@@ -67,7 +71,10 @@ async def import_content(
     if title is not None:
         article_data.title = title
 
-    return await _save_article(db, article_data)
+    return await _save_article(
+        db, article_data,
+        exam_type=exam_type, exam_year=exam_year, question_type=question_type,
+    )
 
 
 async def import_folder(
@@ -96,7 +103,13 @@ async def import_folder(
     return results
 
 
-async def _save_article(db: AsyncSession, data: ImportedArticle) -> Tuple[int, bool]:
+async def _save_article(
+    db: AsyncSession,
+    data: ImportedArticle,
+    exam_type: str | None = None,
+    exam_year: int | None = None,
+    question_type: str | None = None,
+) -> Tuple[int, bool]:
     """Save an imported article and its word mappings. Returns (article_id, is_new)."""
     # Check for duplicate by SHA256
     existing = await db.execute(
@@ -117,8 +130,13 @@ async def _save_article(db: AsyncSession, data: ImportedArticle) -> Tuple[int, b
         await db.commit()
         return existing_article.id, False
 
+    # Expand contractions in the raw text before tokenization.
+    # The tokenizer also calls expand_contractions internally, but we expand
+    # here too because the Article stores the expanded content_text.
+    expanded_text = expand_contractions(data.content_text)
+
     # Tokenize
-    tokens = tokenize(data.content_text)
+    tokens = tokenize(expanded_text)
 
     # Count only real words (exclude punctuation and non-letter tokens)
     real_word_count = sum(1 for t in tokens if not t.is_punctuation and _has_letter(t.text))
@@ -128,12 +146,15 @@ async def _save_article(db: AsyncSession, data: ImportedArticle) -> Tuple[int, b
         title=data.title,
         source_path=data.source_path,
         source_type=data.source_type,
-        content_text=data.content_text,
+        content_text=expanded_text,  # store expanded version
         content_html=data.content_html,
         word_count=real_word_count,
         language="en",
         sha256_hash=data.sha256_hash,
         frontmatter=str(data.frontmatter) if data.frontmatter else None,
+        exam_type=exam_type,
+        exam_year=exam_year,
+        question_type=question_type,
     )
     db.add(article)
     await db.flush()
@@ -307,14 +328,15 @@ async def _save_book_chapter(
     if existing.scalar_one_or_none():
         return existing.scalar_one_or_none().id, False
 
-    tokens = tokenize(data.content_text)
+    expanded_text = expand_contractions(data.content_text)
+    tokens = tokenize(expanded_text)
     real_word_count = sum(1 for t in tokens if not t.is_punctuation and _has_letter(t.text))
 
     article = Article(
         title=data.title,
         source_path=data.source_path,
         source_type=data.source_type,
-        content_text=data.content_text,
+        content_text=expanded_text,
         content_html=data.content_html,
         word_count=real_word_count,
         language="en",
