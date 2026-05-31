@@ -214,11 +214,12 @@ body {
 
 #app-main {
     flex: 1;
-    padding: 24px 32px;
+    padding: 28px 40px 40px;
     min-height: 100vh;
     overflow-x: hidden;
     opacity: 1;
     transition: opacity 0.12s ease-out;
+    max-width: 1100px;
 }
 
 .page-header {
@@ -379,7 +380,7 @@ body {
 
     #sidebar .sidebar-footer { text-align: center; padding: 10px 4px; }
 
-    #app-main { padding: 16px; }
+    #app-main { padding: 16px 20px; max-width: 100%; }
 
     .article-grid {
         grid-template-columns: 1fr;
@@ -387,4 +388,8 @@ body {
 
     .reader-content { padding: 20px 16px; }
     .reader-text { font-size: 16px; }
+    .reader-sidebar { display: none; }
+    .reader-resize-grip { display: none; }
 }
+
+.article-card { position: relative; }
