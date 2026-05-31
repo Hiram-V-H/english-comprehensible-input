@@ -70,6 +70,13 @@ def upgrade() -> None:
         group.sort(key=lambda r: (-r["encounter_count"], r["id"]))
         survivor = group[0]
 
+        # Update survivor's word_lower to the lemma so future lookups work
+        if survivor["word_lower"] != lemma:
+            conn.execute(
+                sa.text("UPDATE words SET word_lower = :lemma WHERE id = :id"),
+                {"lemma": lemma, "id": survivor["id"]},
+            )
+
         for duplicate in group[1:]:
             dup_id = duplicate["id"]
 

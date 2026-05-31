@@ -18,7 +18,12 @@ _downloaded: bool = False
 
 
 def _ensure_nltk() -> object:
-    """Lazy-load the NLTK lemmatizer, downloading wordnet on first use."""
+    """Lazy-load the NLTK lemmatizer, downloading wordnet on first use.
+
+    Checks for existing wordnet data before attempting download, so a
+    prior successful download (or a network interruption) doesn't
+    silently degrade to the no-op fallback on every process start.
+    """
     global _lemmatizer, _downloaded
     if _lemmatizer is not None:
         return _lemmatizer
@@ -27,15 +32,28 @@ def _ensure_nltk() -> object:
     from nltk.stem import WordNetLemmatizer
 
     if not _downloaded:
+        # Check whether wordnet is already present on disk.
         try:
-            nltk.download('wordnet', quiet=True, raise_on_error=True)
-        except Exception as exc:
-            logger.warning("Failed to download wordnet: %s. Lemmatization disabled.", exc)
-            _lemmatizer = _NoopLemmatizer()
-            return _lemmatizer
+            nltk.data.find('corpora/wordnet')
+        except LookupError:
+            # Missing — try to download.
+            try:
+                nltk.download('wordnet', quiet=True, raise_on_error=True)
+            except Exception as exc:
+                logger.warning(
+                    "Failed to download wordnet: %s. Lemmatization disabled.", exc
+                )
+                _lemmatizer = _NoopLemmatizer()
+                _downloaded = True
+                return _lemmatizer
         _downloaded = True
 
-    _lemmatizer = WordNetLemmatizer()
+    try:
+        _lemmatizer = WordNetLemmatizer()
+    except Exception as exc:
+        logger.warning("Failed to init WordNetLemmatizer: %s.", exc)
+        _lemmatizer = _NoopLemmatizer()
+
     return _lemmatizer
 
 
