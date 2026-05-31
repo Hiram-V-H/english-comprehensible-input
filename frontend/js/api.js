@@ -47,19 +47,29 @@ export const api = {
         if (params.per_page) q.set('per_page', params.per_page);
         if (params.sort) q.set('sort', params.sort);
         if (params.tag) q.set('tag', params.tag);
+        if (params.exam_type) q.set('exam_type', params.exam_type);
+        if (params.exam_year) q.set('exam_year', params.exam_year);
+        if (params.question_type) q.set('question_type', params.question_type);
         return request('GET', '/articles?' + q);
     },
     getArticle: (id) => request('GET', '/articles/' + id),
     updateArticle: (id, data) => request('PATCH', '/articles/' + id, data),
     deleteArticle: (id) => request('DELETE', '/articles/' + id),
+    deleteBook: (id) => request('DELETE', '/books/' + id),
 
     // Import
-    importText: (title, content) =>
-        request('POST', '/import/text', { title, content }),
-    importFile: (file) => {
+    importText: (title, content, examMeta = {}) =>
+        request('POST', '/import/text', { title, content, ...examMeta }),
+    importFile: (file, examMeta = {}) => {
         const fd = new FormData();
         fd.append('file', file);
-        return request('POST', '/import/file', fd);
+        const parts = [];
+        if (examMeta.exam_type) parts.push('exam_type=' + encodeURIComponent(examMeta.exam_type));
+        if (examMeta.exam_year) parts.push('exam_year=' + encodeURIComponent(examMeta.exam_year));
+        if (examMeta.question_type) parts.push('question_type=' + encodeURIComponent(examMeta.question_type));
+        let path = '/import/file';
+        if (parts.length) path += '?' + parts.join('&');
+        return request('POST', path, fd);
     },
     importFolder: (folderPath, recursive = false) =>
         request('POST', '/import/folder', { folder_path: folderPath, recursive }),
