@@ -16,7 +16,7 @@ import { renderTocTree, buildChapterMap } from '../components/toc-tree.js';
 import { getSelectionCharOffsets, charOffsetsToWordPositions } from '../utils/text-offset.js';
 
 export function readerPage(main, articleId) {
-    console.log('[reader] v2 loading — resize handle test');
+
     main.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
     let readerData = null;

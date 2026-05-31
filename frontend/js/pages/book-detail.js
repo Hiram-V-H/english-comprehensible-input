@@ -29,7 +29,7 @@ export function bookDetailPage(main, bookId) {
             if (!confirmed) return;
 
             try {
-                await fetch(`/api/books/${book.id}`, { method: 'DELETE' });
+                await api.deleteBook(book.id);
                 showToast(`已删除「${book.title}」`, 'success');
                 router.navigate('#/books');
             } catch (err) {

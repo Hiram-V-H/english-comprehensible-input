@@ -33,6 +33,8 @@ function buildEditForm(article) {
         el('option', { value: 'CET-6' }),
         el('option', { value: 'IELTS' }),
         el('option', { value: 'TOEFL' }),
+        el('option', { value: 'cet6' }),
+        el('option', { value: 'postgraduate' }),
         el('option', { value: '高考英语' }),
     ]);
     const examTypeGroup = el('div', { className: 'form-group' }, [
