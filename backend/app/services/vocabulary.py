@@ -86,10 +86,31 @@ async def bulk_update_status(db: AsyncSession, word_ids: List[int], new_status: 
     return len(list(result.scalars().all()))
 
 
-async def search_words(db: AsyncSession, query: str, limit: int = 10) -> List[Word]:
+async def search_words(db: AsyncSession, query: str, limit: int = 10, exact: bool = False) -> List[Word]:
+    q = query.lower().strip()
+    if exact:
+        # Lemmatize the query, then exact-match the lemma
+        try:
+            lemma = lemmatize(q)
+        except Exception:
+            lemma = q
+        # Try lemma match first, then fall back to surface form
+        result = await db.execute(
+            select(Word).where(Word.word_lower == lemma).limit(1)
+        )
+        words = list(result.scalars().all())
+        if words:
+            return words
+        # Fall back to exact surface form match
+        result = await db.execute(
+            select(Word).where(Word.word_lower == q).limit(1)
+        )
+        return list(result.scalars().all())
+
+    # Prefix search for autocomplete (vocabulary page)
     result = await db.execute(
         select(Word)
-        .where(Word.word_lower.like(f"{query.lower()}%"))
+        .where(Word.word_lower.like(f"{q}%"))
         .order_by(Word.word_lower.asc())
         .limit(limit)
     )

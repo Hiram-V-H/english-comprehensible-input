@@ -57,9 +57,10 @@ async def vocabulary_stats(db: AsyncSession = Depends(get_db)):
 async def search_vocabulary(
     q: str = Query(..., min_length=1),
     limit: int = Query(10, ge=1, le=50),
+    exact: bool = Query(False),
     db: AsyncSession = Depends(get_db),
 ):
-    words = await vocab_service.search_words(db, q, limit)
+    words = await vocab_service.search_words(db, q, limit, exact=exact)
     return {"status": "ok", "data": [WordSummary.model_validate(w) for w in words]}
 
 

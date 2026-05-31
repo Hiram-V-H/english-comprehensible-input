@@ -36,6 +36,7 @@ export const api = {
     updateWord: (id, data) => request('PATCH', '/vocabulary/' + id, data),
     bulkUpdateStatus: (data) => request('POST', '/vocabulary/bulk-status', data),
     searchWords: (q, limit = 10) => request('GET', `/vocabulary/search?q=${encodeURIComponent(q)}&limit=${limit}`),
+    lookupWord: (q) => request('GET', `/vocabulary/search?q=${encodeURIComponent(q)}&limit=1&exact=true`),
     addWordNote: (wordId, data) => request('POST', `/vocabulary/${wordId}/notes`, data),
     updateWordNote: (wordId, noteId, data) => request('PATCH', `/vocabulary/${wordId}/notes/${noteId}`, data),
     deleteWordNote: (wordId, noteId) => request('DELETE', `/vocabulary/${wordId}/notes/${noteId}`),

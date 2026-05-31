@@ -163,7 +163,8 @@ async def _save_article(
     span_tokens: list = []
 
     for token in tokens:
-        if token.is_punctuation or not _has_letter(token.text):
+        is_number_like = token.text and token.text[0].isdigit()
+        if token.is_punctuation or not _has_letter(token.text) or is_number_like:
             aw = ArticleWord(
                 article_id=article.id,
                 word_id=None,
@@ -352,7 +353,8 @@ async def _save_book_chapter(
     span_tokens: list = []
 
     for token in tokens:
-        if token.is_punctuation or not _has_letter(token.text):
+        is_number_like = token.text and token.text[0].isdigit()
+        if token.is_punctuation or not _has_letter(token.text) or is_number_like:
             aw = ArticleWord(
                 article_id=article.id, word_id=None,
                 word_text=token.text, word_lower=token.text.lower(),

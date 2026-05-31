@@ -24,12 +24,28 @@ export function applyWordAnnotations(container, paragraphs) {
 }
 
 /**
- * Update a single word's status class in the rendered DOM.
+ * Update a word's status across ALL occurrences in the rendered DOM.
+ * Finds all spans with the same word_id and updates them together.
  */
 export function updateWordStatus(container, position, newStatus) {
     const span = container.querySelector(`[data-position="${position}"]`);
-    if (span) {
-        span.className = span.className.replace(/word--\w+/g, `word--${newStatus}`);
-        span.dataset.status = newStatus;
+    if (!span) return;
+
+    // Find all spans with the same word_id, or fall back to same word_lower
+    const wordId = span.dataset.wordId;
+    const wordLower = span.dataset.wordLower;
+    let selector;
+    if (wordId) {
+        selector = `[data-word-id="${wordId}"]`;
+    } else if (wordLower) {
+        selector = `[data-word-lower="${wordLower}"]`;
+    } else {
+        selector = `[data-position="${position}"]`;
+    }
+
+    const spans = container.querySelectorAll(selector);
+    for (const s of spans) {
+        s.className = s.className.replace(/word--\w+/g, `word--${newStatus}`);
+        s.dataset.status = newStatus;
     }
 }

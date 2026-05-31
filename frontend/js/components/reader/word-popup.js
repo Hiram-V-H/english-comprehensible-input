@@ -47,7 +47,7 @@ export class WordPopup {
             }
             if (!word && wd.wordLower) {
                 try {
-                    const results = await api.searchWords(wd.wordLower, 1);
+                    const results = await api.lookupWord(wd.wordLower);
                     if (results.length > 0) word = await api.getWord(results[0].id);
                 } catch (e) { /* ignore */ }
             }
