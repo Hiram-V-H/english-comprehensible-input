@@ -202,6 +202,7 @@ export function libraryPage(main) {
             currentArticles = currentArticles.filter(a => a.id !== article.id);
             selectedIds.delete(article.id);
             showToast('已删除文章', 'success');
+            updateBatchUI();
         } catch (err) {
             showToast('删除失败: ' + err.message, 'error');
         }
@@ -406,6 +407,11 @@ export function libraryPage(main) {
             const params = getFilterParams();
             const data = await api.getArticles(params);
             currentArticles = data.items || [];
+            if (batchMode) {
+                const currentIds = new Set(currentArticles.map(a => a.id));
+                selectedIds = new Set([...selectedIds].filter(id => currentIds.has(id)));
+                updateBatchUI();
+            }
             if (!data.items || data.items.length === 0) {
                 content.innerHTML = '<div class="empty-state"><h3>No articles found</h3><p>Try adjusting the filters or import some articles.</p></div>';
                 return;
