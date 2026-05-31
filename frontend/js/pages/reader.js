@@ -10,15 +10,20 @@ import { HighlightOverlay } from '../components/reader/highlight-overlay.js';
 import { AnnotationPanel } from '../components/reader/annotation-panel.js';
 import { ReaderToolbar } from '../components/reader/reader-toolbar.js';
 import { showToast } from '../components/shared/toast.js';
+import { showArticleEditor } from '../components/article-editor.js';
+import { showModal } from '../components/shared/modal.js';
 import { renderTocTree, buildChapterMap } from '../components/toc-tree.js';
+import { getSelectionCharOffsets, charOffsetsToWordPositions } from '../utils/text-offset.js';
 
 export function readerPage(main, articleId) {
+    console.log('[reader] v2 loading — resize handle test');
     main.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
     let readerData = null;
     let sessionId = null;
     let highlightsVisible = true;
     let isNativeRenderer = false;  // true when using ContentRenderer (annotated_html)
+    let readerCleanup = null;  // Stored by async setup, called by router on navigate away
 
     (async () => {
         try {
@@ -59,7 +64,58 @@ export function readerPage(main, articleId) {
                     overlay.removeAll();
                 }
             });
+            toolbar.setOnToggleSidebar(() => {
+                const isHidden = sidebarEl.classList.toggle('hidden');
+                // When hidden, completely remove sidebar and grip from layout
+                sidebarEl.style.display = isHidden ? 'none' : '';
+                resizeGrip.style.display = isHidden ? 'none' : '';
+            });
+            toolbar.setOnEdit(() => handleEditArticle(readerData.article));
+            toolbar.setOnDelete(() => handleDeleteArticle(readerData.article));
             toolbar.render();
+
+            async function handleEditArticle(article) {
+                const updated = await showArticleEditor({
+                    id: article.id,
+                    title: article.title,
+                    exam_type: article.exam_type,
+                    exam_year: article.exam_year,
+                    question_type: article.question_type,
+                    is_archived: article.is_archived,
+                });
+                if (!updated) return;
+                // Update toolbar title
+                const titleEl = document.querySelector('.toolbar-title');
+                if (titleEl) titleEl.textContent = updated.title;
+                // Update local data
+                Object.assign(article, updated);
+            }
+
+            async function handleDeleteArticle(article) {
+                const bodyEl = document.createElement('div');
+                bodyEl.className = 'modal-body';
+                bodyEl.innerHTML = `
+                    <p>确定要删除 <strong>${article.title}</strong> 吗？</p>
+                    <p style="color: var(--color-unknown); font-size: 0.85em; margin-top: 8px;">
+                        此操作不可撤销，文章的所有高亮和笔记也会被删除。
+                    </p>
+                `;
+
+                const confirmed = await showModal('⚠️ 确认删除', bodyEl, [
+                    { label: '取消', value: false },
+                    { label: '确认删除', value: true, primary: true },
+                ]);
+
+                if (!confirmed) return;
+
+                try {
+                    await api.deleteArticle(article.id);
+                    showToast(`已删除「${article.title}」`, 'success');
+                    router.navigate('#/library');
+                } catch (err) {
+                    showToast('删除失败，请重试', 'error');
+                }
+            }
 
             // ── Body: content + sidebar ──
             const bodyEl = el('div', { className: 'reader-body' });
@@ -125,6 +181,47 @@ export function readerPage(main, articleId) {
 
             // Sidebar — annotations or book TOC
             const sidebarEl = el('div', { className: 'reader-sidebar' });
+
+            // Resize grip — standalone element between content and sidebar
+            const resizeGrip = el('div', { className: 'reader-resize-grip' });
+
+            // Restore saved sidebar width
+            const savedWidth = localStorage.getItem('reader-sidebar-width');
+            if (savedWidth) {
+                sidebarEl.style.width = savedWidth + 'px';
+            }
+
+            // Drag-to-resize logic
+            let resizeDragging = false;
+            let resizeStartX = 0;
+            let resizeStartWidth = 0;
+
+            resizeGrip.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                resizeDragging = true;
+                resizeStartX = e.clientX;
+                resizeStartWidth = sidebarEl.offsetWidth;
+                resizeGrip.classList.add('dragging');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!resizeDragging) return;
+                const delta = resizeStartX - e.clientX;  // drag left = narrower sidebar
+                const newWidth = Math.max(100, Math.min(500, resizeStartWidth + delta));
+                sidebarEl.style.width = newWidth + 'px';
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (!resizeDragging) return;
+                resizeDragging = false;
+                resizeGrip.classList.remove('dragging');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                localStorage.setItem('reader-sidebar-width', sidebarEl.offsetWidth);
+            });
+
             const panel = new AnnotationPanel(sidebarEl);
             panel.refresh = async (data) => {
                 panel.render(articleId, data.highlights, data.annotations);
@@ -142,6 +239,7 @@ export function readerPage(main, articleId) {
             }
 
             bodyEl.appendChild(contentEl);
+            bodyEl.appendChild(resizeGrip);
             bodyEl.appendChild(sidebarEl);
             readerContainer.appendChild(bodyEl);
             main.appendChild(readerContainer);
@@ -149,7 +247,7 @@ export function readerPage(main, articleId) {
             // Render content
             display.render(readerData);
 
-            // For native renderer, bind word click after DOM is populated
+            // For native renderer, bind word click and text selection after DOM is populated
             if (isNativeRenderer) {
                 textEl.addEventListener('click', (e) => {
                     const wordEl = e.target.closest('[data-position]');
@@ -165,6 +263,23 @@ export function readerPage(main, articleId) {
                         rect,
                     });
                 });
+
+                // Text selection → highlight creation
+                textEl.addEventListener('mouseup', () => {
+                    setTimeout(() => {
+                        const offsets = getSelectionCharOffsets(textEl);
+                        if (offsets && readerData) {
+                            const positions = charOffsetsToWordPositions(
+                                readerData.paragraphs,
+                                offsets.start_char_offset,
+                                offsets.end_char_offset,
+                            );
+                            selectionHandler.showMenu({ ...offsets, ...(positions || {}) });
+                        } else {
+                            selectionHandler.showMenu(null);
+                        }
+                    }, 10);
+                });
             }
 
             overlay.apply(readerData.highlights, readerData.paragraphs);
@@ -178,7 +293,10 @@ export function readerPage(main, articleId) {
             };
             document.addEventListener('click', dismissHandler);
 
-            return () => {
+            readerCleanup = () => {
+                // Reset inline styles set on #app-main for reader layout
+                main.style.padding = '';
+                main.style.maxWidth = '';
                 document.removeEventListener('click', dismissHandler);
                 popup.hide();
                 selectionHandler.hideMenu();
@@ -193,6 +311,11 @@ export function readerPage(main, articleId) {
             main.style.maxWidth = '1100px';
         }
     })();
+
+    // Return cleanup wrapper for the router to call on navigation
+    return () => {
+        if (readerCleanup) readerCleanup();
+    };
 }
 
 // ── Chapter navigation bar ──────────────────────────────────

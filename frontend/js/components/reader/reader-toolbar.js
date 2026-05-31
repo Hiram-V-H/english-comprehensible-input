@@ -8,12 +8,18 @@ export class ReaderToolbar {
         this._onToggleHighlights = null;
         this._onFontSizeChange = null;
         this._onThemeToggle = null;
+        this._onToggleSidebar = null;
+        this._onEdit = null;
+        this._onDelete = null;
     }
 
     setOnBack(cb) { this._onBack = cb; }
     setOnToggleHighlights(cb) { this._onToggleHighlights = cb; }
     setOnFontSizeChange(cb) { this._onFontSizeChange = cb; }
     setOnThemeToggle(cb) { this._onThemeToggle = cb; }
+    setOnToggleSidebar(cb) { this._onToggleSidebar = cb; }
+    setOnEdit(cb) { this._onEdit = cb; }
+    setOnDelete(cb) { this._onDelete = cb; }
 
     render() {
         clearElement(this.container);
@@ -35,6 +41,20 @@ export class ReaderToolbar {
                 el('span', { className: 'pill-dot' }),
                 a.i_plus_one_score >= 0.7 ? ' i+1 Ideal' : a.i_plus_one_score >= 0.4 ? ' Challenging' : ' Hard',
             ]) : null,
+            // Edit button
+            el('button', {
+                className: 'toolbar-btn',
+                title: '编辑文章信息',
+                textContent: '✎',
+                onClick: () => { if (this._onEdit) this._onEdit(); },
+            }),
+            // Delete button
+            el('button', {
+                className: 'toolbar-btn',
+                title: '删除文章',
+                textContent: '🗑',
+                onClick: () => { if (this._onDelete) this._onDelete(); },
+            }),
             el('span', { style: 'flex:1' }),
             el('button', {
                 className: 'toolbar-btn',
@@ -55,6 +75,11 @@ export class ReaderToolbar {
                 className: 'toolbar-btn',
                 onClick: () => { if (this._onToggleHighlights) this._onToggleHighlights(); },
             }, ['Toggle Highlights']),
+            el('button', {
+                className: 'toolbar-btn',
+                title: 'Toggle annotations sidebar',
+                onClick: () => { if (this._onToggleSidebar) this._onToggleSidebar(); },
+            }, ['☰']),
         ]));
     }
 }
