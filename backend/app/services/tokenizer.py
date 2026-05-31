@@ -18,13 +18,13 @@ class Token:
 
 # Pattern: words/contractions/numbers OR punctuation sequences
 _TOKEN_RE = re.compile(
-    r"[a-zA-Z]+(?:'[a-zA-Z]+)?|\d+(?:\.\d+)?|"  # words, contractions, numbers
-    r"[.,!?;:]+|"   # clause/sentence punctuation
+    r"[a-zA-Z]+(?:'[a-zA-Z]+)?|\d+s|\d+(?:\.\d+)?|"  # words, contractions, 40s/50s, numbers
+    r"[.,!?;:%]+|"   # clause/sentence punctuation (incl. %)
     r"[()\[\]{}\"']|"  # brackets and quotes
     r"--?"  # dashes
 )
 
-_PUNCT_SET = set(".,!?;:()[]{}'\"-")
+_PUNCT_SET = set(".,!?;:()[]{}'\"-%")
 
 
 def tokenize(text: str) -> List[Token]:
