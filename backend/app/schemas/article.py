@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ArticleSummary(BaseModel):
@@ -59,3 +59,7 @@ class ArticleUpdate(BaseModel):
     exam_type: Optional[str] = None
     exam_year: Optional[int] = None
     question_type: Optional[str] = None
+
+
+class ArticleContentUpdate(BaseModel):
+    content_text: str = Field(..., min_length=1)
