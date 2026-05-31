@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from ..exceptions import NotFoundError
 from ..models.word import Word, WordNote
 from ..schemas.word import VocabularyStats
+from .lemmatizer import lemmatize
 
 
 async def get_words(
@@ -112,18 +113,29 @@ async def get_stats(db: AsyncSession) -> VocabularyStats:
 
 
 async def get_or_create_word(db: AsyncSession, word_text: str) -> Word:
-    """Find existing word by lowercase text, or create a new one."""
+    """Find existing word by lemma, or create a new one.
+
+    Uses lemmatization so inflected forms map to the base word.
+    e.g., "running" → lemma "run" → Word("run").
+    ArticleWord still stores the original surface form.
+    """
     word_lower = word_text.lower().strip()
+    lemma = lemmatize(word_lower)
+
+    # Look up by lemma — all inflected forms share one Word record
     result = await db.execute(
-        select(Word).where(Word.word_lower == word_lower)
+        select(Word).where(Word.word_lower == lemma)
     )
     word = result.scalar_one_or_none()
     if word:
         return word
 
+    # Create with lemma as word_lower; store original text as word,
+    # and also populate the previously-unused lemma column
     word = Word(
         word=word_text.strip(),
-        word_lower=word_lower,
+        word_lower=lemma,
+        lemma=lemma,
         status="unknown",
         first_seen=datetime.now(),
     )
