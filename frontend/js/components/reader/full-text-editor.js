@@ -9,7 +9,7 @@ import { showModal } from '../shared/modal.js';
 export async function showFullTextEditor(contentText) {
     const textarea = el('textarea', {
         className: 'full-text-editor',
-        value: contentText,
+        textContent: contentText,
         rows: 20,
     });
 
