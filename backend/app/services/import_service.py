@@ -325,8 +325,9 @@ async def _save_book_chapter(
     existing = await db.execute(
         select(Article).where(Article.sha256_hash == data.sha256_hash)
     )
-    if existing.scalar_one_or_none():
-        return existing.scalar_one_or_none().id, False
+    existing_article = existing.scalar_one_or_none()
+    if existing_article:
+        return existing_article.id, False
 
     expanded_text = expand_contractions(data.content_text)
     tokens = tokenize(expanded_text)
