@@ -27,13 +27,17 @@ def upgrade() -> None:
     """
     conn = op.get_bind()
 
-    # Try to import the lemmatizer. If NLTK not available, skip merge.
+    # Test nltk availability before importing lemmatizer.
+    # The lemmatize import always succeeds (nltk import is lazy),
+    # so we test nltk directly to provide a real safety net.
     try:
-        from app.services.lemmatizer import lemmatize
-    except Exception:
+        import nltk  # noqa: F401
+    except ImportError:
         # NLTK not available during migration — skip data merge.
         # The analysis layer will still work correctly for future imports.
         return
+
+    from app.services.lemmatizer import lemmatize
 
     # Fetch all Word records
     result = conn.execute(
@@ -44,17 +48,23 @@ def upgrade() -> None:
     if not rows:
         return
 
-    # Group by lemma
+    # Group by lemma, persisting the computed lemma for each word
     lemma_groups: dict[str, list[dict]] = {}
     for row in rows:
         lemma = lemmatize(row["word_lower"])
         lemma_groups.setdefault(lemma, []).append(dict(row))
+        conn.execute(
+            sa.text("UPDATE words SET lemma = :lemma WHERE id = :id"),
+            {"lemma": lemma, "id": row["id"]},
+        )
 
     # Process groups with >1 member
     merged = 0
+    merged_groups = 0
     for lemma, group in lemma_groups.items():
         if len(group) <= 1:
             continue
+        merged_groups += 1
 
         # Sort: keep the one with highest encounter_count, then oldest id
         group.sort(key=lambda r: (-r["encounter_count"], r["id"]))
@@ -87,6 +97,7 @@ def upgrade() -> None:
                     sa.text("UPDATE words SET notes = :notes WHERE id = :sid"),
                     {"notes": duplicate["notes"], "sid": survivor["id"]},
                 )
+                survivor["notes"] = duplicate["notes"]
 
             # Delete the duplicate WordNote records first
             conn.execute(
@@ -101,15 +112,8 @@ def upgrade() -> None:
             )
             merged += 1
 
-    # Also update the lemma column for all remaining words
-    conn.execute(
-        sa.text(
-            "UPDATE words SET lemma = word_lower WHERE lemma IS NULL"
-        )
-    )
-
     if merged:
-        print(f"Merged {merged} duplicate Word records across {len(lemma_groups)} lemma groups")
+        print(f"Merged {merged} duplicate Word records across {merged_groups} lemma groups")
 
 
 def downgrade() -> None:
