@@ -11,6 +11,8 @@ import { AnnotationPanel } from '../components/reader/annotation-panel.js';
 import { ReaderToolbar } from '../components/reader/reader-toolbar.js';
 import { showToast } from '../components/shared/toast.js';
 import { showArticleEditor } from '../components/article-editor.js';
+import { WordInlineEditor } from '../components/reader/word-inline-editor.js';
+import { showFullTextEditor } from '../components/reader/full-text-editor.js';
 import { showModal } from '../components/shared/modal.js';
 import { renderTocTree, buildChapterMap } from '../components/toc-tree.js';
 import { getSelectionCharOffsets, charOffsetsToWordPositions } from '../utils/text-offset.js';
@@ -72,6 +74,8 @@ export function readerPage(main, articleId) {
             });
             toolbar.setOnEdit(() => handleEditArticle(readerData.article));
             toolbar.setOnDelete(() => handleDeleteArticle(readerData.article));
+
+            toolbar.setOnEditContent(() => handleEditContent());
             toolbar.render();
 
             async function handleEditArticle(article) {
@@ -117,15 +121,74 @@ export function readerPage(main, articleId) {
                 }
             }
 
+            async function handleEditContent() {
+                const newText = await showFullTextEditor(readerData.article.content_text);
+                if (!newText) return;
+                try {
+                    const newPayload = await api.updateArticleContent(readerData.article.id, newText);
+                    refreshReader(newPayload);
+                    showToast('已更新正文', 'success');
+                } catch (err) {
+                    showToast('更新失败，请重试', 'error');
+                }
+            }
+
+            function refreshReader(newPayload) {
+                const scrollTop = window.scrollY;
+
+                readerData = newPayload;
+
+                // Clear and re-render
+                if (readerData.article.annotated_html) {
+                    // This shouldn't happen after edit (annotated_html is cleared)
+                    // but handle it anyway for robustness
+                    renderer.render(readerData.article.annotated_html);
+                    applyWordAnnotations(textEl, readerData.paragraphs);
+                } else {
+                    // Fallback to ArticleDisplay
+                    if (!articleDisplay) {
+                        articleDisplay = new ArticleDisplay(textEl, {
+                            onWordClick: (wordData) => {
+                                popup.show(wordData);
+                                if (wordData.wordId) {
+                                    api.recordEncounter(articleId, wordData.wordId).catch(() => {});
+                                }
+                            },
+                            onSelectionComplete: (selData) => {
+                                selectionHandler.showMenu(selData);
+                            },
+                        });
+                        isNativeRenderer = false;
+                    }
+                    articleDisplay.render(readerData);
+                }
+
+                // Re-apply highlights
+                overlay.removeAll();
+                if (readerData.highlights) {
+                    overlay.apply(readerData.highlights, readerData.paragraphs);
+                }
+
+                // Refresh annotation panel
+                panel.render(articleId, readerData.highlights, readerData.annotations);
+
+                // Restore scroll position
+                window.scrollTo(0, Math.min(scrollTop, document.body.scrollHeight));
+            }
+
             // ── Body: content + sidebar ──
             const bodyEl = el('div', { className: 'reader-body' });
             const contentEl = el('div', { className: 'reader-content' });
             const textEl = el('div', { className: 'reader-text' });
 
+            // Init inline word editor (must be after textEl declaration)
+            const inlineEditor = new WordInlineEditor(textEl);
+
             // Determine rendering path: native HTML or legacy ArticleDisplay
             const hasAnnotatedHtml = readerData.article.annotated_html;
             let display;  // unified interface: { render(), updateWordStatus() }
             let renderer = null;
+            let articleDisplay = null;
 
             if (hasAnnotatedHtml) {
                 isNativeRenderer = true;
@@ -149,7 +212,7 @@ export function readerPage(main, articleId) {
                     renderer.setTheme(next);
                 });
             } else {
-                const articleDisplay = new ArticleDisplay(textEl, {
+                articleDisplay = new ArticleDisplay(textEl, {
                     onWordClick: (wordData) => {
                         popup.show(wordData);
                         if (wordData.wordId) {
@@ -281,6 +344,41 @@ export function readerPage(main, articleId) {
                     }, 10);
                 });
             }
+
+            // Double-click to edit: detect dblclicks on word spans
+            textEl.addEventListener('dblclick', (e) => {
+                const span = e.target.closest('[data-position]');
+                if (!span) return;
+
+                const position = parseInt(span.dataset.position, 10);
+                if (isNaN(position)) return;
+
+                // Find word data in paragraphs
+                let wordData = null;
+                for (const para of readerData.paragraphs) {
+                    const found = para.words.find(w => w.position === position);
+                    if (found) { wordData = found; break; }
+                }
+                if (!wordData || wordData.status === 'punct') return;
+
+                // Get char_offset from dataset or wordData
+                const charOffset = parseInt(span.dataset.charOffset, 10);
+
+                inlineEditor.open(span, {
+                    text: wordData.text,
+                    char_offset: isNaN(charOffset) ? wordData.char_offset : charOffset,
+                    position: wordData.position,
+                }, readerData.article.content_text).then(async (result) => {
+                    if (!result) return;
+                    try {
+                        const newPayload = await api.updateArticleContent(readerData.article.id, result.newContentText);
+                        refreshReader(newPayload);
+                        showToast('已更新正文', 'success');
+                    } catch (err) {
+                        showToast('更新失败，请重试', 'error');
+                    }
+                });
+            });
 
             overlay.apply(readerData.highlights, readerData.paragraphs);
             panel.render(articleId, readerData.highlights, readerData.annotations);
