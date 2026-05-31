@@ -11,6 +11,7 @@ export class ReaderToolbar {
         this._onToggleSidebar = null;
         this._onEdit = null;
         this._onDelete = null;
+        this._onEditContent = null;
     }
 
     setOnBack(cb) { this._onBack = cb; }
@@ -20,6 +21,7 @@ export class ReaderToolbar {
     setOnToggleSidebar(cb) { this._onToggleSidebar = cb; }
     setOnEdit(cb) { this._onEdit = cb; }
     setOnDelete(cb) { this._onDelete = cb; }
+    setOnEditContent(cb) { this._onEditContent = cb; }
 
     render() {
         clearElement(this.container);
@@ -54,6 +56,13 @@ export class ReaderToolbar {
                 title: '删除文章',
                 textContent: '🗑',
                 onClick: () => { if (this._onDelete) this._onDelete(); },
+            }),
+            // Edit content button
+            el('button', {
+                className: 'toolbar-btn',
+                title: '编辑正文',
+                textContent: '📝',
+                onClick: () => { if (this._onEditContent) this._onEditContent(); },
             }),
             el('span', { style: 'flex:1' }),
             el('button', {
