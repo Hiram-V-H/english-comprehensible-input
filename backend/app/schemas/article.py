@@ -20,6 +20,9 @@ class ArticleSummary(BaseModel):
     last_read_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+    exam_type: Optional[str] = None
+    exam_year: Optional[int] = None
+    question_type: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -43,6 +46,9 @@ class ArticleDetail(BaseModel):
     last_read_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+    exam_type: Optional[str] = None
+    exam_year: Optional[int] = None
+    question_type: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -50,3 +56,6 @@ class ArticleDetail(BaseModel):
 class ArticleUpdate(BaseModel):
     title: Optional[str] = None
     is_archived: Optional[bool] = None
+    exam_type: Optional[str] = None
+    exam_year: Optional[int] = None
+    question_type: Optional[str] = None
