@@ -54,6 +54,7 @@ export const api = {
     },
     getArticle: (id) => request('GET', '/articles/' + id),
     updateArticle: (id, data) => request('PATCH', '/articles/' + id, data),
+    updateArticleContent: (id, contentText) => request('PUT', `/articles/${id}/content`, { content_text: contentText }),
     deleteArticle: (id) => request('DELETE', '/articles/' + id),
     deleteBook: (id) => request('DELETE', '/books/' + id),
 
