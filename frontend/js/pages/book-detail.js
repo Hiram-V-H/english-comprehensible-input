@@ -4,11 +4,39 @@ import { router } from '../router.js';
 import { formatDate, formatPercent } from '../utils/formatters.js';
 import { STRIPE_GRADIENTS, getDifficultyColors } from '../utils/card-utils.js';
 import { renderTocTree, buildChapterMap } from '../components/toc-tree.js';
+import { showModal } from '../components/shared/modal.js';
+import { showToast } from '../components/shared/toast.js';
 
 export function bookDetailPage(main, bookId) {
     main.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
     (async () => {
+        async function deleteCurrentBook(book) {
+            const bodyEl = document.createElement('div');
+            bodyEl.className = 'modal-body';
+            bodyEl.innerHTML = `
+                <p>确定要删除 <strong>${book.title}</strong> 吗？</p>
+                <p style="color: var(--color-unknown); font-size: 0.85em; margin-top: 8px;">
+                    此操作不可撤销，本书的所有章节也会被删除。
+                </p>
+            `;
+
+            const confirmed = await showModal('⚠️ 确认删除', bodyEl, [
+                { label: '取消', value: false },
+                { label: '确认删除', value: true, primary: true },
+            ]);
+
+            if (!confirmed) return;
+
+            try {
+                await fetch(`/api/books/${book.id}`, { method: 'DELETE' });
+                showToast('已删除「${book.title}」', 'success');
+                router.navigate('#/books');
+            } catch (err) {
+                showToast('删除失败，请重试', 'error');
+            }
+        }
+
         try {
             const resp = await fetch('/api/books/' + bookId);
             const json = await resp.json();
@@ -18,9 +46,16 @@ export function bookDetailPage(main, bookId) {
 
             // Header
             main.appendChild(el('div', { className: 'page-header' }, [
-                el('div', {}, [
+                el('div', { style: 'flex:1' }, [
                     el('h1', { className: 'page-title' }, [book.title]),
                     book.author ? el('div', { style: 'color:var(--color-text-secondary);font-size:14px;margin-top:4px' }, ['by ' + book.author]) : null,
+                ]),
+                el('div', { className: 'header-actions' }, [
+                    el('button', {
+                        className: 'btn btn-danger',
+                        textContent: '🗑 删除本书',
+                        onClick: () => deleteCurrentBook(book),
+                    }),
                 ]),
             ]));
 
