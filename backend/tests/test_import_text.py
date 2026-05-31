@@ -59,7 +59,9 @@ async def test_numbers_not_treated_as_words(client: AsyncClient):
         assert len(results) == 0, f"'{token}' should not be a vocabulary word"
 
     # Check that real words ARE in vocabulary
-    for word in ["what", "paris", "don't", "answer"]:
+    # Contractions are expanded by the tokenizer before vocabulary lookup
+    # (e.g., "don't" → "do" + "not")
+    for word in ["what", "paris", "do", "not", "answer"]:
         r = await client.get(f"/api/vocabulary/search?q={word}")
         results = r.json()["data"]
         assert len(results) > 0, f"'{word}' should be in vocabulary"
