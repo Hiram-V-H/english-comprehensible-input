@@ -98,6 +98,18 @@ def upgrade() -> None:
                 {"dup_encounters": duplicate["encounter_count"], "survivor_id": survivor["id"]},
             )
 
+            # Fix annotated_html: replace old word-id with survivor id
+            # SQLite REPLACE handles the string substitution inside the HTML blob
+            conn.execute(
+                sa.text(
+                    "UPDATE articles SET annotated_html = REPLACE("
+                    "annotated_html, 'data-word-id=\"' || :old || '\"', "
+                    "'data-word-id=\"' || :new || '\"') "
+                    "WHERE annotated_html IS NOT NULL"
+                ),
+                {"old": str(dup_id), "new": str(survivor["id"])},
+            )
+
             # If duplicate has notes and survivor doesn't, copy them
             if duplicate.get("notes") and not survivor.get("notes"):
                 conn.execute(
