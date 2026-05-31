@@ -13,6 +13,7 @@ from typing import Dict, List, Optional, Tuple
 from ebooklib import epub
 
 from ..providers.importer import BookImportResult, BookImporter, ChapterInfo, TocItem
+from ..services.contractions import expand as expand_contractions
 
 
 class EpubImporter(BookImporter):
@@ -443,6 +444,15 @@ _KEEP_TAGS = {
 # Void elements (self-closing, no end tag)
 _VOID_ELEMENTS = {'br', 'hr'}
 
+# Class name patterns that indicate a paragraph should be upgraded to a heading
+import re as _re
+_SUBTITLE_CLASS_RE = _re.compile(
+    r'(?:^|\s)(?:subtitle|subheading|sub-title|sub-heading|'
+    r'chapter-?subtitle|chapter-?subheading)'
+    r'(?:$|\s|\d)',
+    _re.IGNORECASE,
+)
+
 
 class _CleanHTMLParser(HTMLParser):
     """Parse EPUB XHTML, strip CSS/images/scripts, emit clean semantic HTML."""
@@ -451,6 +461,7 @@ class _CleanHTMLParser(HTMLParser):
         super().__init__()
         self.result: List[str] = []
         self.skip_stack: List[str] = []  # tags we're currently skipping (their depth)
+        self.tag_stack: List[str] = []  # tracks open tags for correct closing
 
     def handle_starttag(self, tag, attrs):
         tag_lower = tag.lower()
@@ -459,6 +470,19 @@ class _CleanHTMLParser(HTMLParser):
             return
         if self.skip_stack:
             return
+
+        # Detect subtitle classes on <p> → upgrade to <h3>
+        if tag_lower == 'p':
+            class_val = ''
+            for k, v in attrs:
+                if k == 'class':
+                    class_val = v
+                    break
+            if class_val and _SUBTITLE_CLASS_RE.search(class_val):
+                self.result.append('<h3>')
+                self.tag_stack.append('h3')
+                return
+
         if tag_lower in _KEEP_TAGS:
             keep = []
             if tag_lower == 'a':
@@ -466,6 +490,8 @@ class _CleanHTMLParser(HTMLParser):
                     if k == 'href':
                         keep.append(f' {k}="{html_mod.escape(v, quote=True)}"')
             self.result.append(f'<{tag_lower}{"".join(keep)}>')
+            if tag_lower not in _VOID_ELEMENTS:
+                self.tag_stack.append(tag_lower)
         # Tags not in _KEEP_TAGS are silently dropped but their
         # text content still flows through via handle_data.
 
@@ -477,7 +503,9 @@ class _CleanHTMLParser(HTMLParser):
         if self.skip_stack:
             return
         if tag_lower in _KEEP_TAGS and tag_lower not in _VOID_ELEMENTS:
-            self.result.append(f'</{tag_lower}>')
+            # Pop the matching tag (or h3 if this </p> closes an upgraded paragraph)
+            expected = self.tag_stack.pop() if self.tag_stack else tag_lower
+            self.result.append(f'</{expected}>')
 
     def handle_data(self, data):
         if self.skip_stack:
@@ -494,12 +522,15 @@ class _CleanHTMLParser(HTMLParser):
 
 
 def _html_to_clean_html(raw_html: str) -> str:
-    """Strip CSS, images, scripts from EPUB XHTML. Keep semantic structure."""
+    """Strip CSS, images, scripts from EPUB XHTML. Keep semantic structure.
+    Contractions are expanded so span injection aligns with tokenized text."""
     parser = _CleanHTMLParser()
     parser.feed(raw_html)
     parser.close()
-    # Decode entities so token matching works consistently
-    return html_mod.unescape(parser.get_html())
+    clean = html_mod.unescape(parser.get_html())
+    # Expand contractions in the clean HTML so that <span> injection
+    # matches the tokens produced by the (now-expanded) tokenizer output.
+    return expand_contractions(clean)
 
 
 # ── Span injection ──────────────────────────────────────────
